@@ -7,7 +7,7 @@ let productosFiltradosGlobal = []; let itemsPorPagina = 30; let paginaActual = 1
 
 if(localStorage.getItem('gc_dark') === 'true') document.body.classList.add('dark-mode');
 
-// --- 1. MOTOR DE INSTALACIÓN PWA (App Real) ---
+// --- 1. MOTOR PWA ---
 let promptInstalacion;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); promptInstalacion = e;
@@ -125,6 +125,10 @@ function aplicarFiltros() {
     productosFiltradosGlobal = resultado; paginaActual = 1; document.getElementById('lista-productos').innerHTML = ''; renderizarPagina();
 }
 
+// === BLINDAJE NIVEL MILITAR BASE64 PARA COMILLAS SIMPLES ===
+function codificarNombre(str) { return btoa(unescape(encodeURIComponent(str))); }
+function decodificarNombre(b64) { return decodeURIComponent(escape(atob(b64))); }
+
 function renderizarPagina() {
     const cont = document.getElementById('lista-productos');
     let inicio = (paginaActual - 1) * itemsPorPagina, fin = paginaActual * itemsPorPagina; let pedazo = productosFiltradosGlobal.slice(inicio, fin);
@@ -136,16 +140,17 @@ function renderizarPagina() {
     pedazo.forEach(p => {
         const isFav = favoritos.includes(p.codigo); const isAgotado = p.StockNum <= 0; 
         const d = document.createElement('div'); d.className = `producto-card ${isAgotado ? 'agotado' : ''}`;
-        let nombreSeguro = encodeURIComponent(p.Nombre);
         
-        // El botón ahora pasa también la imagen para la animación
+        // AQUI ESTÁ LA MAGIA: Codificamos en Base64 para que no haya comillas en el HTML
+        let nombreB64 = codificarNombre(p.Nombre);
+        
         d.innerHTML = `
             ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
             <i class="fa-${isFav ? 'solid' : 'regular'} fa-heart btn-fav ${isFav ? 'active' : ''}" onclick="toggleFav('${p.codigo}')"></i>
             <img loading="lazy" src="img/${p.codigo}.webp" data-attempts="0" onerror="imgFallback(this, '${p.codigo}')" alt="${p.Nombre}">
             <h3 class="producto-titulo">${p.Nombre}</h3><p class="producto-stock">Disp: ${p.StockStr}</p><p class="producto-precio">$${p.PrecioStr}</p>
-            <button class="btn-share" onclick="compartirProductoSeguro('${nombreSeguro}', '${p.PrecioStr}')"><i class="fa-solid fa-share-nodes"></i></button>
-            <button class="btn-add ${isAgotado ? 'disabled' : ''}" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoSeguro('${nombreSeguro}', ${p.PrecioNum}, this, false, 'img/${p.codigo}.webp')"`}><i class="fa-solid fa-plus"></i></button>
+            <button class="btn-share" onclick="compartirProductoB64('${nombreB64}', '${p.PrecioStr}')"><i class="fa-solid fa-share-nodes"></i></button>
+            <button class="btn-add ${isAgotado ? 'disabled' : ''}" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioNum}, this, false, 'img/${p.codigo}.webp')"`}><i class="fa-solid fa-plus"></i></button>
         `;
         fragmento.appendChild(d);
     });
@@ -165,11 +170,10 @@ function generarCategorias() {
 function setActiveNav(id) { document.querySelectorAll('.bottom-nav a').forEach(a => a.classList.remove('active')); const el = document.getElementById(id); if(el) el.classList.add('active'); }
 function irInicio() { cerrarModal('all'); setActiveNav('nav-home'); window.scrollTo({top: 0, behavior: 'smooth'}); document.getElementById('buscador').value = ''; document.getElementById('chkAgotados').checked = false; cerrarSugerencias(); const btnLicores = Array.from(document.querySelectorAll('.cat-btn')).find(b => b.innerText === 'LICORES'); if(btnLicores) filtrarCategoria('LICORES', btnLicores); else filtrarCategoria('Todos', document.querySelectorAll('.cat-btn')[0]); }
 
-// --- 2. MODAL DE LEGALES Y SOPORTE ---
 function abrirLegales() { document.getElementById('modal-legales').style.display = 'flex'; }
 function abrirSoporteWhatsApp() {
     let msg = "Hola, necesito ayuda con la plataforma de Gran Catador.";
-    window.open(`https://wa.me/584245496366?text=${encodeURIComponent(msg)}`, '_blank'); // Puedes cambiar este número al de Atención al Cliente si es diferente.
+    window.open(`https://wa.me/584245496366?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 function abrirPerfil() { 
@@ -193,7 +197,6 @@ function cerrarModal(modalId, navAnterior = 'nav-home') {
 
 function guardarCarritoLS() { localStorage.setItem('gc_cart', JSON.stringify(carrito)); }
 
-// --- 3. LA ANIMACIÓN VISUAL DE COMPRA (La botella voladora) ---
 function animarAlCarrito(btnElement, imgSrc) {
     if(!btnElement || !imgSrc) return;
     const cartIcon = document.getElementById('icono-carrito-flotante');
@@ -206,14 +209,11 @@ function animarAlCarrito(btnElement, imgSrc) {
     flyingImg.src = imgSrc;
     flyingImg.className = 'flying-img';
     
-    // Inicia en la posición del botón
     flyingImg.style.left = `${btnRect.left}px`;
     flyingImg.style.top = `${btnRect.top}px`;
     document.body.appendChild(flyingImg);
 
-    // Pequeño delay para que CSS registre la posición inicial
     setTimeout(() => {
-        // Vuela hacia el carrito (y se hace pequeña y transparente)
         flyingImg.style.left = `${cartRect.left + 15}px`;
         flyingImg.style.top = `${cartRect.top + 15}px`;
         flyingImg.style.width = '15px';
@@ -221,7 +221,6 @@ function animarAlCarrito(btnElement, imgSrc) {
         flyingImg.style.opacity = '0.3';
     }, 10);
 
-    // Cuando termina de volar (600ms), borramos la imagen y "saltamos" el carrito
     setTimeout(() => {
         flyingImg.remove();
         cartIcon.style.transform = 'scale(1.2) rotate(-10deg)';
@@ -233,7 +232,6 @@ function agregarAlCarrito(nombre, precio, btnElement, isCross = false, imgSrc = 
     if(carrito[nombre]) carrito[nombre].cantidad++; else carrito[nombre] = { precio: precio, cantidad: 1 };
     guardarCarritoLS(); actualizarCartCount(); 
     
-    // Disparamos la animación VIP
     if(btnElement && imgSrc) animarAlCarrito(btnElement, imgSrc);
 
     if(btnElement) {
@@ -255,13 +253,13 @@ function sugerirAcompañante() {
     if(sugerencias.length > 0) {
         let cont = document.getElementById('cross-sell-items'); cont.innerHTML = '';
         sugerencias.forEach(p => {
-            let nombreSeguro = encodeURIComponent(p.Nombre);
+            let nombreB64 = codificarNombre(p.Nombre);
             cont.innerHTML += `
                 <div style="min-width:110px; border:1px solid var(--borde-color); border-radius:12px; padding:10px; text-align:center; background:var(--item-bg);">
                     <img src="img/${p.codigo}.webp" onerror="imgFallback(this, '${p.codigo}')" style="height:55px; object-fit:contain; margin-bottom:5px;">
                     <p style="font-size:10px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--texto-oscuro);">${p.Nombre}</p>
                     <p style="font-size:13px; color:var(--dorado); font-weight:bold;">$${p.PrecioStr}</p>
-                    <button onclick="agregarAlCarritoSeguro('${nombreSeguro}', ${p.PrecioNum}, this, true, 'img/${p.codigo}.webp'); cerrarCrossSell();" style="background:var(--verde-btn); color:white; border:none; padding:8px; border-radius:8px; font-size:11px; font-weight:bold; width:100%; margin-top:5px; cursor:pointer;"><i class="fa-solid fa-plus"></i> Añadir</button>
+                    <button onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioNum}, this, true, 'img/${p.codigo}.webp'); cerrarCrossSell();" style="background:var(--verde-btn); color:white; border:none; padding:8px; border-radius:8px; font-size:11px; font-weight:bold; width:100%; margin-top:5px; cursor:pointer;"><i class="fa-solid fa-plus"></i> Añadir</button>
                 </div>`;
         });
         document.getElementById('modal-cross-sell').style.display = 'flex';
@@ -282,8 +280,8 @@ function renderizarCarrito() {
     }
     document.getElementById('checkout-sections').style.display = 'block'; 
     for(let nombre in carrito) {
-        let nombreSeguro = encodeURIComponent(nombre); let item = carrito[nombre]; let sub = item.precio * item.cantidad; totalCarrito += sub;
-        lista.innerHTML += `<div class="cart-item"><div class="cart-item-info"><p class="cart-item-title">${nombre}</p><p class="cart-item-price">$${item.precio.toFixed(2)}</p></div><div class="cart-controls"><button class="cart-btn" onclick="cambiarCantSeguro('${nombreSeguro}', -1)">-</button><span style="font-size:13px; font-weight:bold; width:15px; text-align:center;">${item.cantidad}</span><button class="cart-btn" onclick="cambiarCantSeguro('${nombreSeguro}', 1)">+</button></div></div>`;
+        let nombreB64 = codificarNombre(nombre); let item = carrito[nombre]; let sub = item.precio * item.cantidad; totalCarrito += sub;
+        lista.innerHTML += `<div class="cart-item"><div class="cart-item-info"><p class="cart-item-title">${nombre}</p><p class="cart-item-price">$${item.precio.toFixed(2)}</p></div><div class="cart-controls"><button class="cart-btn" onclick="cambiarCantB64('${nombreB64}', -1)">-</button><span style="font-size:13px; font-weight:bold; width:15px; text-align:center;">${item.cantidad}</span><button class="cart-btn" onclick="cambiarCantB64('${nombreB64}', 1)">+</button></div></div>`;
     }
     document.getElementById('totalUsdModal').innerText = `$${totalCarrito.toFixed(2)}`; document.getElementById('totalBsModal').innerText = `${(totalCarrito * tasaOficial).toLocaleString('es-VE', {minimumFractionDigits:2})} Bs`; calcularVuelto();
 }
@@ -327,9 +325,9 @@ function enviarPedido() {
     window.open(`https://wa.me/584245496366?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-// Funciones Seguras
-function agregarAlCarritoSeguro(n, p, b, c = false, imgSrc = '') { agregarAlCarrito(decodeURIComponent(n), p, b, c, imgSrc); }
-function compartirProductoSeguro(n, p) { compartirProducto(decodeURIComponent(n), p); }
-function cambiarCantSeguro(n, d) { cambiarCant(decodeURIComponent(n), d); }
+// FUNCIONES PUENTE PARA DESENCRIPTAR BASE64
+function agregarAlCarritoB64(b64, p, btn, c = false, img = '') { agregarAlCarrito(decodificarNombre(b64), p, btn, c, img); }
+function compartirProductoB64(b64, p) { compartirProducto(decodificarNombre(b64), p); }
+function cambiarCantB64(b64, d) { cambiarCant(decodificarNombre(b64), d); }
 
 window.onload = cargarInventario;
