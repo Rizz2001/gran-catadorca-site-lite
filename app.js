@@ -41,7 +41,7 @@ function checkHorario() {
 }
 checkHorario(); setInterval(checkHorario, 60000);
 
-// NUEVA FUNCIÓN AÑADIDA: Lee los 3 archivos externos de golpe
+// Lee los 3 archivos externos de golpe
 async function obtenerArchivosExternos() {
     // 1. Leer Tasa
     try {
@@ -59,7 +59,7 @@ async function obtenerArchivosExternos() {
         }
     } catch (error) { console.log("No se encontró recomendados.txt"); }
 
-    // 3. Leer Productos Siempre Disponibles (El nuevo truco)
+    // 3. Leer Productos Siempre Disponibles
     try {
         let resDisp = await fetch('disponibles.txt?v=' + new Date().getTime());
         if (resDisp.ok) { 
@@ -107,7 +107,7 @@ async function cargarInventario() {
             }
         });
 
-        // AQUI ESTÁ EL TRUCO ACTUANDO: Lee el archivo que acabas de crear
+        // Activa los productos que forzaste en disponibles.txt
         Object.values(mapa).forEach(prod => {
             if (siempreDisponibles.includes(prod.codigo)) { prod.StockNum = 999; prod.StockStr = "Disponible"; }
         });
@@ -348,24 +348,60 @@ function actualizarMetodoPago() { let val = document.getElementById('metodoPagoS
 function calcularVuelto() { let pago = parseFloat(document.getElementById('montoPago').value) || 0; let res = document.getElementById('res-vuelto'); if(pago > totalCarrito) { let vUsd = pago - totalCarrito; let vBs = vUsd * tasaOficial; res.style.display = 'block'; res.style.color = 'var(--verde-btn)'; res.innerHTML = `Vuelto: $${vUsd.toFixed(2)} / ${vBs.toLocaleString('es-VE', {minimumFractionDigits:2})} Bs`; } else { res.style.display = 'none'; } }
 function mostrarToast(msg) { const cont = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = msg; cont.appendChild(t); setTimeout(() => t.remove(), 2500); }
 
+// LA FUNCIÓN CORREGIDA CON ENCODE Y SALTOS DE LÍNEA (\n)
 function enviarPedido() {
     if(Object.keys(carrito).length === 0) return alert("Tu carrito está vacío.");
     if(!isTiendaAbierta) return alert("Lo sentimos, la tienda se encuentra cerrada en este momento.");
     
-    let historial = JSON.parse(localStorage.getItem('gc_historial')) || []; let fechaDate = new Date(); let fechaStr = fechaDate.toLocaleDateString('es-VE') + " - " + fechaDate.toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'});
+    let historial = JSON.parse(localStorage.getItem('gc_historial')) || []; 
+    let fechaDate = new Date(); 
+    let fechaStr = fechaDate.toLocaleDateString('es-VE') + " - " + fechaDate.toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'});
     let nuevoPedido = { fecha: fechaStr, total: totalCarrito, items: Object.keys(carrito).map(k => ({ nombre: k, precio: carrito[k].precio, cantidad: carrito[k].cantidad })) };
-    historial.unshift(nuevoPedido); if(historial.length > 5) historial.pop(); localStorage.setItem('gc_historial', JSON.stringify(historial));
+    historial.unshift(nuevoPedido); 
+    if(historial.length > 5) historial.pop(); 
+    localStorage.setItem('gc_historial', JSON.stringify(historial));
 
-    let nombreUser = localStorage.getItem('gc_nombre') || 'un cliente'; let msg = `Hola Gran Catador, soy ${nombreUser}. Quiero hacer el siguiente pedido:%0A%0A`;
-    for(let nombre in carrito) { msg += `▪ ${carrito[nombre].cantidad}x ${nombre} - $${(carrito[nombre].precio * carrito[nombre].cantidad).toFixed(2)}%0A`; }
-    let entrega = document.querySelector('input[name="metodoEntrega"]:checked').value; msg += `%0A📦 *Entrega:* ${entrega}`;
-    if(entrega === 'Delivery') { let dir = document.getElementById('direccionDelivery').value.trim(); if(!dir) return alert("Ingresa tu dirección para el delivery."); msg += `%0A📍 *Dirección:* ${dir}`; if(!localStorage.getItem('gc_direccion')) localStorage.setItem('gc_direccion', dir); }
-    let notas = document.getElementById('notasPedido').value.trim(); if(notas) msg += `%0A📝 *Notas:* ${notas}`;
-    let metodo = document.getElementById('metodoPagoSelect').value; msg += `%0A💳 *Método de Pago:* ${metodo}`;
-    if(metodo === 'Efectivo') { let pago = parseFloat(document.getElementById('montoPago').value) || 0; if(pago > totalCarrito) { msg += `%0A💵 _Pagaré con $${pago}_%0A🟢 _Requiero vuelto de: $${(pago - totalCarrito).toFixed(2)}_`; } } else { msg += `%0A📎 _[Te adjunto el capture]_`; }
-    msg += `%0A%0A*TOTAL:* $${totalCarrito.toFixed(2)} (Tasa BCV: ${tasaOficial.toFixed(2)})`; 
-    carrito = {}; actualizarCartCount(); cerrarModal('modal-cart', 'nav-cart');
-    window.open(`https://wa.me/584245496366?text=${msg}`, '_blank');
+    let nombreUser = localStorage.getItem('gc_nombre') || 'un cliente'; 
+    let msg = `Hola Gran Catador, soy *${nombreUser}*. Quiero hacer el siguiente pedido:\n\n`;
+    
+    for(let nombre in carrito) { 
+        msg += `▪ ${carrito[nombre].cantidad}x ${nombre} - $${(carrito[nombre].precio * carrito[nombre].cantidad).toFixed(2)}\n`; 
+    }
+    
+    let entrega = document.querySelector('input[name="metodoEntrega"]:checked').value; 
+    msg += `\n📦 *Entrega:* ${entrega}`;
+    
+    if(entrega === 'Delivery') { 
+        let dir = document.getElementById('direccionDelivery').value.trim(); 
+        if(!dir) return alert("Ingresa tu dirección para el delivery."); 
+        msg += `\n📍 *Dirección:* ${dir}`; 
+        if(!localStorage.getItem('gc_direccion')) localStorage.setItem('gc_direccion', dir); 
+    }
+    
+    let notas = document.getElementById('notasPedido').value.trim(); 
+    if(notas) msg += `\n📝 *Notas:* ${notas}`;
+    
+    let metodo = document.getElementById('metodoPagoSelect').value; 
+    msg += `\n💳 *Método de Pago:* ${metodo}`;
+    
+    if(metodo === 'Efectivo') { 
+        let pago = parseFloat(document.getElementById('montoPago').value) || 0; 
+        if(pago > totalCarrito) { 
+            msg += `\n💵 _Pagaré con $${pago}_\n🟢 _Requiero vuelto de: $${(pago - totalCarrito).toFixed(2)}_`; 
+        } 
+    } else { 
+        msg += `\n📎 _[Te adjunto el capture]_`; 
+    }
+    
+    msg += `\n\n*TOTAL:* $${totalCarrito.toFixed(2)} (Tasa BCV: ${tasaOficial.toFixed(2)})`; 
+    
+    carrito = {}; 
+    actualizarCartCount(); 
+    cerrarModal('modal-cart', 'nav-cart');
+    
+    // El "traductor" nativo para que WhatsApp respete los espacios y saltos de línea
+    let urlSegura = `https://wa.me/584245496366?text=${encodeURIComponent(msg)}`;
+    window.open(urlSegura, '_blank');
 }
 
 window.onload = cargarInventario;
