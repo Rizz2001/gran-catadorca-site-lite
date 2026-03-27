@@ -40,9 +40,13 @@
         .age-btn { width: 100%; padding: 12px; background: var(--dorado); color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; letter-spacing: 1px;}
         .age-error { color: #ea4335; font-size: 12px; margin-top: 10px; display: none; font-weight: bold; }
 
+       /* --- NUEVO ENCABEZADO ESTILIZADO CON LOGO --- */
         header { background-color: var(--azul-rey); padding: 25px 20px 45px 20px; text-align: center; color: white; border-bottom-left-radius: 25px; border-bottom-right-radius: 25px; transition: 0.3s; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        header h1 { font-size: 26px; font-weight: 800; letter-spacing: 1px; }
-        header p { font-size: 12px; color: var(--dorado); letter-spacing: 2px; text-transform: uppercase; font-weight: 600; margin-top: 2px;}
+        .header-brand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; }
+        .header-logo { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--dorado); box-shadow: 0 2px 8px rgba(0,0,0,0.3); background: white; }
+        .header-titles { text-align: left; display: flex; flex-direction: column; justify-content: center; }
+        header h1 { font-size: 22px; font-weight: 800; letter-spacing: 1px; line-height: 1; margin: 0; }
+        header p { font-size: 10px; color: var(--dorado); letter-spacing: 1px; text-transform: uppercase; font-weight: 600; margin-top: 4px; margin-bottom: 0; }
         .tasa-bcv { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 11px; display: inline-block; margin-top: 10px; border: 1px solid rgba(245, 167, 0, 0.5); cursor: pointer; }
         .tasa-bcv b { color: var(--dorado); font-weight: bold; }
         .status-badge { position: absolute; top: 15px; right: 20px; font-size: 10px; font-weight: bold; padding: 5px 10px; border-radius: 20px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
