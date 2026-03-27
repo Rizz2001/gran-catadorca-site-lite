@@ -32,10 +32,10 @@ function checkHorario() {
     let horaCaracas = parseInt(formatter.format(d));
     let badge = document.getElementById('store-status'), btnWs = document.getElementById('btn-whatsapp'), msgCerrado = document.getElementById('msg-cerrado');
     if(horaCaracas >= 8 && horaCaracas < 21) {
-        isTiendaAbierta = true; badge.innerHTML = "🟢 ABIERTO"; badge.style.background = "rgba(37, 211, 102, 0.2)"; badge.style.color = "#25D366";
+        isTiendaAbierta = true; badge.innerHTML = "🟢 ABIERTO"; badge.style.background = "rgba(37, 211, 102, 0.2)"; badge.style.color = "#25D366"; badge.style.borderColor = "rgba(37, 211, 102, 0.4)";
         btnWs.classList.remove('disabled'); msgCerrado.style.display = "none";
     } else {
-        isTiendaAbierta = false; badge.innerHTML = "🔴 CERRADO"; badge.style.background = "rgba(234, 67, 53, 0.2)"; badge.style.color = "#ea4335";
+        isTiendaAbierta = false; badge.innerHTML = "🔴 CERRADO"; badge.style.background = "rgba(234, 67, 53, 0.2)"; badge.style.color = "#ea4335"; badge.style.borderColor = "rgba(234, 67, 53, 0.4)";
         btnWs.classList.add('disabled'); msgCerrado.style.display = "block";
     }
 }
@@ -87,7 +87,6 @@ async function cargarInventario() {
             }
         });
 
-        // TRUCO: AQUI VAN LOS CÓDIGOS DE PRODUCTOS QUE NUNCA SE AGOTAN
         let siempreDisponibles = ["000233", "7591031001959"]; 
         Object.values(mapa).forEach(prod => {
             if (siempreDisponibles.includes(prod.codigo)) { prod.StockNum = 999; prod.StockStr = "Disponible"; }
@@ -140,7 +139,12 @@ function renderizarPagina() {
     let pedazo = productosFiltradosGlobal.slice(inicio, fin);
 
     if(productosFiltradosGlobal.length === 0) { 
-        cont.innerHTML = '<p style="text-align:center; grid-column:span 2; color: var(--texto-claro); margin-top: 20px;">No se encontraron productos.</p>'; 
+        cont.innerHTML = `
+            <div style="grid-column: span 2; text-align: center; padding: 50px 20px; color: var(--texto-claro);">
+                <i class="fa-solid fa-wine-glass-empty" style="font-size: 70px; opacity: 0.3; margin-bottom: 20px;"></i>
+                <h3 style="color: var(--texto-oscuro); font-size: 18px; font-weight: 800;">¿Aún no tienes sed?</h3>
+                <p style="font-size: 13px; margin-top: 5px;">No encontramos botellas en esta sección.</p>
+            </div>`; 
         document.getElementById('btn-cargar-mas').style.display = 'none'; return; 
     }
 
@@ -219,13 +223,13 @@ function abrirPerfil() {
         hist.forEach((ped, index) => {
             let itemsT = ped.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
             listCont.innerHTML += `
-                <div style="border:1px solid var(--borde-color); padding:10px; border-radius:10px; margin-bottom:10px;">
+                <div style="border:1px solid var(--borde-color); padding:12px; border-radius:15px; margin-bottom:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                         <span style="font-size:11px; font-weight:bold; color:var(--dorado);">${ped.fecha}</span>
-                        <span style="font-size:12px; font-weight:bold;">$${ped.total.toFixed(2)}</span>
+                        <span style="font-size:13px; font-weight:800;">$${ped.total.toFixed(2)}</span>
                     </div>
                     <p style="font-size:11px; color:var(--texto-claro); margin-bottom:10px;">${itemsT}</p>
-                    <button onclick="repetirPedido(${index})" style="background:var(--azul-rey); color:white; border:none; padding:8px; width:100%; border-radius:8px; font-size:11px; cursor:pointer;"><i class="fa-solid fa-rotate-right"></i> Repetir este pedido</button>
+                    <button onclick="repetirPedido(${index})" style="background:var(--azul-rey); color:white; border:none; padding:10px; width:100%; border-radius:10px; font-size:12px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-rotate-right"></i> Repetir este pedido</button>
                 </div>
             `;
         });
@@ -260,11 +264,11 @@ function sugerirAcompañante() {
         let cont = document.getElementById('cross-sell-items'); cont.innerHTML = '';
         sugerencias.forEach(p => {
             cont.innerHTML += `
-                <div style="min-width:110px; border:1px solid var(--borde-color); border-radius:12px; padding:10px; text-align:center;">
-                    <img src="img/${p.codigo}.jpg" style="height:50px; object-fit:contain; margin-bottom:5px;" onerror="this.src='logo.png'">
-                    <p style="font-size:9px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--texto-oscuro);">${p.Nombre}</p>
-                    <p style="font-size:12px; color:var(--dorado); font-weight:bold;">$${p.PrecioStr}</p>
-                    <button onclick="agregarAlCarrito('${p.Nombre}', ${p.PrecioNum}, null, true); cerrarCrossSell();" style="background:var(--verde-btn); color:white; border:none; padding:6px; border-radius:8px; font-size:11px; width:100%; margin-top:5px; cursor:pointer;"><i class="fa-solid fa-plus"></i> Añadir</button>
+                <div style="min-width:110px; border:1px solid var(--borde-color); border-radius:15px; padding:10px; text-align:center;">
+                    <img src="img/${p.codigo}.jpg" style="height:55px; object-fit:contain; margin-bottom:5px;" onerror="this.src='logo.png'">
+                    <p style="font-size:10px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--texto-oscuro);">${p.Nombre}</p>
+                    <p style="font-size:13px; color:var(--dorado); font-weight:800;">$${p.PrecioStr}</p>
+                    <button onclick="agregarAlCarrito('${p.Nombre}', ${p.PrecioNum}, null, true); cerrarCrossSell();" style="background:var(--verde-btn); color:white; border:none; padding:8px; border-radius:10px; font-size:11px; font-weight:bold; width:100%; margin-top:5px; cursor:pointer;"><i class="fa-solid fa-plus"></i> Añadir</button>
                 </div>
             `;
         });
@@ -275,7 +279,10 @@ function cerrarCrossSell() { document.getElementById('modal-cross-sell').style.d
 
 function actualizarCartCount() { let t = 0; for(let k in carrito) t += carrito[k].cantidad; document.getElementById('cart-count').innerText = t; }
 function vaciarCarrito() { if(confirm("¿Estás seguro de vaciar el carrito?")) { carrito = {}; actualizarCartCount(); cerrarModal('modal-cart', 'nav-cart'); mostrarToast("Carrito vacío"); } }
-function abrirCarrito() { if(Object.keys(carrito).length === 0) return mostrarToast("El carrito está vacío."); setActiveNav('nav-cart'); document.getElementById('modal-cart').style.display = 'flex'; renderizarCarrito(); }
+
+function abrirCarrito() { 
+    setActiveNav('nav-cart'); document.getElementById('modal-cart').style.display = 'flex'; renderizarCarrito(); 
+}
 
 function repetirPedido(index) {
     let hist = JSON.parse(localStorage.getItem('gc_historial')) || [];
@@ -286,13 +293,29 @@ function repetirPedido(index) {
 
 function renderizarCarrito() {
     const lista = document.getElementById('lista-carrito'); lista.innerHTML = ''; totalCarrito = 0;
+    
+    // ILUSTRACIÓN DE CARRITO VACÍO
+    if(Object.keys(carrito).length === 0) {
+        lista.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: var(--texto-claro);">
+                <i class="fa-solid fa-cart-arrow-down" style="font-size: 70px; opacity: 0.3; margin-bottom: 20px;"></i>
+                <h3 style="color: var(--texto-oscuro); font-size: 18px; font-weight: 800;">Tu carrito está vacío</h3>
+                <p style="font-size: 13px; margin-top: 5px;">Agrega unas bebidas para empezar la fiesta.</p>
+                <button onclick="cerrarModal('modal-cart', 'nav-home')" class="btn-enviar" style="width: auto; padding: 12px 30px; margin-top: 25px; display: inline-block;">Ir a comprar</button>
+            </div>`;
+        document.getElementById('checkout-sections').style.display = 'none'; // Ocultar checkout si está vacío
+        return;
+    }
+    
+    document.getElementById('checkout-sections').style.display = 'block'; // Mostrar si hay cosas
+    
     for(let nombre in carrito) {
         let item = carrito[nombre]; let sub = item.precio * item.cantidad; totalCarrito += sub;
-        lista.innerHTML += `<div class="cart-item"><div class="cart-item-info"><p class="cart-item-title">${nombre}</p><p class="cart-item-price">$${item.precio.toFixed(2)}</p></div><div class="cart-controls"><button class="cart-btn" onclick="cambiarCant('${nombre}', -1)">-</button><span style="font-size:13px; font-weight:bold;">${item.cantidad}</span><button class="cart-btn" onclick="cambiarCant('${nombre}', 1)">+</button></div></div>`;
+        lista.innerHTML += `<div class="cart-item"><div class="cart-item-info"><p class="cart-item-title">${nombre}</p><p class="cart-item-price">$${item.precio.toFixed(2)}</p></div><div class="cart-controls"><button class="cart-btn" onclick="cambiarCant('${nombre}', -1)">-</button><span style="font-size:14px; font-weight:bold;">${item.cantidad}</span><button class="cart-btn" onclick="cambiarCant('${nombre}', 1)">+</button></div></div>`;
     }
     document.getElementById('totalUsdModal').innerText = `$${totalCarrito.toFixed(2)}`; document.getElementById('totalBsModal').innerText = `${(totalCarrito * tasaOficial).toLocaleString('es-VE', {minimumFractionDigits:2})} Bs`; calcularVuelto();
 }
-function cambiarCant(n, delta) { carrito[n].cantidad += delta; if(carrito[n].cantidad <= 0) delete carrito[n]; actualizarCartCount(); if(Object.keys(carrito).length === 0) cerrarModal('modal-cart', 'nav-cart'); else renderizarCarrito(); }
+function cambiarCant(n, delta) { carrito[n].cantidad += delta; if(carrito[n].cantidad <= 0) delete carrito[n]; actualizarCartCount(); renderizarCarrito(); }
 
 function toggleDireccion() { let met = document.querySelector('input[name="metodoEntrega"]:checked').value; let dirInput = document.getElementById('direccionDelivery'); let btnMap = document.getElementById('btnMap'); if(met === 'Delivery') { dirInput.style.display = 'block'; btnMap.style.display = 'none'; if(localStorage.getItem('gc_direccion') && !dirInput.value) dirInput.value = localStorage.getItem('gc_direccion'); } else { dirInput.style.display = 'none'; btnMap.style.display = 'block'; } }
 function abrirMapa() { window.open('http://googleusercontent.com/maps.google.com/2', '_blank'); }
@@ -301,7 +324,9 @@ function calcularVuelto() { let pago = parseFloat(document.getElementById('monto
 function mostrarToast(msg) { const cont = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = msg; cont.appendChild(t); setTimeout(() => t.remove(), 2500); }
 
 function enviarPedido() {
+    if(Object.keys(carrito).length === 0) return alert("Tu carrito está vacío.");
     if(!isTiendaAbierta) return alert("Lo sentimos, la tienda se encuentra cerrada en este momento.");
+    
     let historial = JSON.parse(localStorage.getItem('gc_historial')) || []; let fechaDate = new Date(); let fechaStr = fechaDate.toLocaleDateString('es-VE') + " - " + fechaDate.toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'});
     let nuevoPedido = { fecha: fechaStr, total: totalCarrito, items: Object.keys(carrito).map(k => ({ nombre: k, precio: carrito[k].precio, cantidad: carrito[k].cantidad })) };
     historial.unshift(nuevoPedido); if(historial.length > 5) historial.pop(); localStorage.setItem('gc_historial', JSON.stringify(historial));
