@@ -1,6 +1,6 @@
 let inventario = []; let carrito = {}; let favoritos = JSON.parse(localStorage.getItem('gc_favs')) || []; 
 let tasaOficial = 36.25; let totalCarrito = 0; let categoriaActual = 'LICORES'; let debounceTimer; 
-let isTiendaAbierta = true; let codigosRecomendados = []; 
+let isTiendaAbierta = true; let codigosRecomendados = []; let siempreDisponibles = []; 
 let productosFiltradosGlobal = []; let itemsPorPagina = 30; let paginaActual = 1;
 
 if(localStorage.getItem('gc_dark') === 'true') document.body.classList.add('dark-mode');
@@ -41,14 +41,16 @@ function checkHorario() {
 }
 checkHorario(); setInterval(checkHorario, 60000);
 
-// NUEVA FUNCIÓN: Ahora lee la Tasa y los Recomendados al mismo tiempo
+// NUEVA FUNCIÓN AÑADIDA: Lee los 3 archivos externos de golpe
 async function obtenerArchivosExternos() {
+    // 1. Leer Tasa
     try {
         let resTasa = await fetch('tasa.txt?v=' + new Date().getTime());
         if (resTasa.ok) { let texto = await resTasa.text(); tasaOficial = parseFloat(texto.replace(',', '.')); }
     } catch (error) { console.log("Usando tasa predeterminada."); }
     document.getElementById('tasaValor').innerText = tasaOficial.toFixed(2) + " Bs";
 
+    // 2. Leer Recomendados (Ventas Cruzadas)
     try {
         let resRec = await fetch('recomendados.txt?v=' + new Date().getTime());
         if (resRec.ok) { 
@@ -56,6 +58,15 @@ async function obtenerArchivosExternos() {
             codigosRecomendados = textoRec.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); 
         }
     } catch (error) { console.log("No se encontró recomendados.txt"); }
+
+    // 3. Leer Productos Siempre Disponibles (El nuevo truco)
+    try {
+        let resDisp = await fetch('disponibles.txt?v=' + new Date().getTime());
+        if (resDisp.ok) { 
+            let textoDisp = await resDisp.text(); 
+            siempreDisponibles = textoDisp.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); 
+        }
+    } catch (error) { console.log("No se encontró disponibles.txt"); }
 }
 
 function imgFallback(imgElement, codigoProducto) {
@@ -96,7 +107,7 @@ async function cargarInventario() {
             }
         });
 
-        let siempreDisponibles = ["000233", "7591031001959"]; 
+        // AQUI ESTÁ EL TRUCO ACTUANDO: Lee el archivo que acabas de crear
         Object.values(mapa).forEach(prod => {
             if (siempreDisponibles.includes(prod.codigo)) { prod.StockNum = 999; prod.StockStr = "Disponible"; }
         });
@@ -267,11 +278,8 @@ function agregarAlCarrito(nombre, precio, btnElement, isCross = false) {
     }
 }
 
-// NUEVA LÓGICA: Ahora lee los códigos del archivo recomendados.txt
 function sugerirAcompañante() {
     let sugerencias = [];
-    
-    // Si el archivo tiene códigos, los busca. Si está vacío, busca Hielo y Refresco por defecto.
     if(codigosRecomendados.length > 0) {
         sugerencias = inventario.filter(p => codigosRecomendados.includes(p.codigo) && p.StockNum > 0).slice(0, 3);
     } else {
