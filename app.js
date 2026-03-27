@@ -46,7 +46,7 @@ checkHorario(); setInterval(checkHorario, 60000);
 async function obtenerArchivosExternos() {
     try {
         let resTasa = await fetch('tasa.txt?v=' + new Date().getTime());
-        if (resTasa.ok) { let texto = await resTasa.text(); tasaOficial = parseFloat(texto.replace(',', '.')); }
+        if (resTasa.ok) { let texto = await resTasa.text(); tasaOficial = parseFloat(texto.trim().replace(',', '.')); }
     } catch (error) { console.log("Error leyendo tasa.txt"); }
     document.getElementById('tasaValor').innerText = tasaOficial.toFixed(2) + " Bs";
 
@@ -86,7 +86,9 @@ async function cargarInventario() {
                 let cod = r[r.length-4]?.trim(), usd = r[r.length-1]?.trim();
                 let catLimpia = limpiarCategoria(r[r.length-5]);
                 if (catLimpia === "CHARCUTERIA" || catLimpia === "FRUTERIA") return; 
-                if (cod && !isNaN(cod) && usd?.includes(',')) {
+                
+                // CORRECCIÓN: Ahora lee códigos con letras sin ignorarlos
+                if (cod && usd?.includes(',')) {
                     mapa[cod] = { codigo: cod, Nombre: r[r.length-3]?.trim(), Cat: catLimpia, PrecioStr: usd, PrecioNum: parseFloat(usd.replace('.','').replace(',','.')), StockNum: 0, StockStr: "0,00" };
                 }
             }
@@ -197,14 +199,16 @@ function renderizarPagina() {
         const isFav = favoritos.includes(p.codigo); const isAgotado = p.StockNum <= 0; 
         const d = document.createElement('div'); d.className = `producto-card ${isAgotado ? 'agotado' : ''}`;
         
-        // CORREGIDO: Botón de añadir (fa-plus) en vez de cart roto.
+        // CORRECCIÓN BUCHANANS: Escapar las comillas simples para que el JavaScript no se rompa
+        let nombreEscapado = p.Nombre.replace(/'/g, "\\'");
+        
         d.innerHTML = `
             ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
             <i class="fa-${isFav ? 'solid' : 'regular'} fa-heart btn-fav ${isFav ? 'active' : ''}" onclick="toggleFav('${p.codigo}')"></i>
             <img loading="lazy" src="img/${p.codigo}.webp" data-attempts="0" onerror="imgFallback(this, '${p.codigo}')" alt="${p.Nombre}">
             <h3 class="producto-titulo">${p.Nombre}</h3><p class="producto-stock">Disp: ${p.StockStr}</p><p class="producto-precio">$${p.PrecioStr}</p>
-            <button class="btn-share" onclick="compartirProducto('${p.Nombre}', '${p.PrecioStr}')"><i class="fa-solid fa-share-nodes"></i></button>
-            <button class="btn-add ${isAgotado ? 'disabled' : ''}" ${isAgotado ? 'disabled' : `onclick="agregarAlCarrito('${p.Nombre}', ${p.PrecioNum}, this)"`}><i class="fa-solid fa-plus"></i></button>
+            <button class="btn-share" onclick="compartirProducto('${nombreEscapado}', '${p.PrecioStr}')"><i class="fa-solid fa-share-nodes"></i></button>
+            <button class="btn-add ${isAgotado ? 'disabled' : ''}" ${isAgotado ? 'disabled' : `onclick="agregarAlCarrito('${nombreEscapado}', ${p.PrecioNum}, this)"`}><i class="fa-solid fa-plus"></i></button>
         `;
         fragmento.appendChild(d);
     });
@@ -303,12 +307,15 @@ function sugerirAcompañante() {
     if(sugerencias.length > 0) {
         let cont = document.getElementById('cross-sell-items'); cont.innerHTML = '';
         sugerencias.forEach(p => {
+            // Escapar comillas también en ventas cruzadas
+            let nombreEscapado = p.Nombre.replace(/'/g, "\\'");
+            
             cont.innerHTML += `
                 <div style="min-width:110px; border:1px solid var(--borde-color); border-radius:12px; padding:10px; text-align:center; background:var(--item-bg);">
                     <img src="img/${p.codigo}.webp" onerror="imgFallback(this, '${p.codigo}')" style="height:55px; object-fit:contain; margin-bottom:5px;">
                     <p style="font-size:10px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--texto-oscuro);">${p.Nombre}</p>
                     <p style="font-size:13px; color:var(--dorado); font-weight:bold;">$${p.PrecioStr}</p>
-                    <button onclick="agregarAlCarrito('${p.Nombre}', ${p.PrecioNum}, null, true); cerrarCrossSell();" style="background:var(--verde-btn); color:white; border:none; padding:8px; border-radius:8px; font-size:11px; font-weight:bold; width:100%; margin-top:5px; cursor:pointer;"><i class="fa-solid fa-plus"></i> Añadir</button>
+                    <button onclick="agregarAlCarrito('${nombreEscapado}', ${p.PrecioNum}, null, true); cerrarCrossSell();" style="background:var(--verde-btn); color:white; border:none; padding:8px; border-radius:8px; font-size:11px; font-weight:bold; width:100%; margin-top:5px; cursor:pointer;"><i class="fa-solid fa-plus"></i> Añadir</button>
                 </div>
             `;
         });
@@ -336,7 +343,6 @@ function renderizarCarrito() {
     const lista = document.getElementById('lista-carrito'); lista.innerHTML = ''; totalCarrito = 0;
     
     if(Object.keys(carrito).length === 0) {
-        // CORREGIDO: Icono de carrito vacío (fa-cart-shopping en lugar de arrow-down)
         lista.innerHTML = `
             <div style="text-align: center; padding: 50px 20px; color: var(--texto-claro);">
                 <i class="fa-solid fa-cart-shopping" style="font-size: 60px; opacity: 0.2; margin-bottom: 20px;"></i>
@@ -350,6 +356,8 @@ function renderizarCarrito() {
     document.getElementById('checkout-sections').style.display = 'block'; 
     
     for(let nombre in carrito) {
+        // Escapamos nombre para el carrito también
+        let nombreEscapado = nombre.replace(/'/g, "\\'");
         let item = carrito[nombre]; let sub = item.precio * item.cantidad; totalCarrito += sub;
         lista.innerHTML += `
             <div class="cart-item">
@@ -358,9 +366,9 @@ function renderizarCarrito() {
                     <p class="cart-item-price">$${item.precio.toFixed(2)}</p>
                 </div>
                 <div class="cart-controls">
-                    <button class="cart-btn" onclick="cambiarCant('${nombre}', -1)">-</button>
+                    <button class="cart-btn" onclick="cambiarCant('${nombreEscapado}', -1)">-</button>
                     <span style="font-size:13px; font-weight:bold; width:15px; text-align:center;">${item.cantidad}</span>
-                    <button class="cart-btn" onclick="cambiarCant('${nombre}', 1)">+</button>
+                    <button class="cart-btn" onclick="cambiarCant('${nombreEscapado}', 1)">+</button>
                 </div>
             </div>`;
     }
