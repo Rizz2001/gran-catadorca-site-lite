@@ -1,6 +1,6 @@
 self.addEventListener('install', (e) => {
-  console.log('Service Worker instalado');
+    console.log('[Service Worker] Instalado exitosamente en Gran Catador');
 });
+
 self.addEventListener('fetch', (e) => {
-  // Permite que la app siga funcionando aunque haya cortes rápidos de red
 });
