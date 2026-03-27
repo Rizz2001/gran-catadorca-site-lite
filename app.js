@@ -10,9 +10,9 @@ if(localStorage.getItem('gc_dark') === 'true') document.body.classList.add('dark
 let promptInstalacion;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); promptInstalacion = e; document.getElementById('pwa-banner').style.display = 'block'; });
 function instalarApp() { if(promptInstalacion) { promptInstalacion.prompt(); promptInstalacion.userChoice.then(() => { document.getElementById('pwa-banner').style.display = 'none'; promptInstalacion = null; }); } }
-if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => { console.log("App lista para funcionar sin internet."); }).catch(err => console.log("Fallo en Service Worker", err)); }); }
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => { console.log("PWA Ok"); }).catch(err => console.log("SW Error", err)); }); }
 
-if (localStorage.getItem('ageVerified') === 'true') document.getElementById('age-gate').style.display = 'none';
+if (localStorage.getItem('ageVerified') === 'true') { let ag = document.getElementById('age-gate'); if(ag) ag.style.display = 'none'; }
 function verificarEdad() {
     let d = document.getElementById('age-d').value, m = document.getElementById('age-m').value, y = document.getElementById('age-y').value, err = document.getElementById('age-error');
     if(!d || !m || !y || d>31 || m>12 || y<1900) { err.innerText = "Ingresa una fecha válida."; err.style.display = "block"; return; }
@@ -22,35 +22,34 @@ function verificarEdad() {
 }
 
 function checkHorario() {
-    let d = new Date(); let formatter = new Intl.DateTimeFormat('es-VE', { hour: 'numeric', hour12: false, timeZone: 'America/Caracas' }); let horaCaracas = parseInt(formatter.format(d));
-    let badge = document.getElementById('store-status'), btnWs = document.getElementById('btn-whatsapp'), msgCerrado = document.getElementById('msg-cerrado');
-    if(horaCaracas >= 8 && horaCaracas < 21) { isTiendaAbierta = true; badge.innerHTML = "🟢 ABIERTO"; badge.style.background = "rgba(37, 211, 102, 0.2)"; badge.style.color = "#25D366"; badge.style.borderColor = "rgba(37, 211, 102, 0.4)"; if(btnWs) btnWs.classList.remove('disabled'); if(msgCerrado) msgCerrado.style.display = "none"; } 
-    else { isTiendaAbierta = false; badge.innerHTML = "🔴 CERRADO"; badge.style.background = "rgba(234, 67, 53, 0.2)"; badge.style.color = "#ea4335"; badge.style.borderColor = "rgba(234, 67, 53, 0.4)"; if(btnWs) btnWs.classList.add('disabled'); if(msgCerrado) msgCerrado.style.display = "block"; }
+    try {
+        let d = new Date(); let formatter = new Intl.DateTimeFormat('es-VE', { hour: 'numeric', hour12: false, timeZone: 'America/Caracas' }); let horaCaracas = parseInt(formatter.format(d));
+        let badge = document.getElementById('store-status'), btnWs = document.getElementById('btn-whatsapp'), msgCerrado = document.getElementById('msg-cerrado');
+        if(!badge) return;
+        if(horaCaracas >= 8 && horaCaracas < 21) { isTiendaAbierta = true; badge.innerHTML = "🟢 ABIERTO"; badge.style.background = "rgba(37, 211, 102, 0.2)"; badge.style.color = "#25D366"; badge.style.borderColor = "rgba(37, 211, 102, 0.4)"; if(btnWs) btnWs.classList.remove('disabled'); if(msgCerrado) msgCerrado.style.display = "none"; } 
+        else { isTiendaAbierta = false; badge.innerHTML = "🔴 CERRADO"; badge.style.background = "rgba(234, 67, 53, 0.2)"; badge.style.color = "#ea4335"; badge.style.borderColor = "rgba(234, 67, 53, 0.4)"; if(btnWs) btnWs.classList.add('disabled'); if(msgCerrado) msgCerrado.style.display = "block"; }
+    } catch(e) { console.log("Error en horario"); }
 }
 checkHorario(); setInterval(checkHorario, 60000);
 
 async function obtenerArchivosExternos() {
-    try { let resTasa = await fetch('tasa.txt?v=' + new Date().getTime()); if (resTasa.ok) { let texto = await resTasa.text(); tasaOficial = parseFloat(texto.trim().replace(',', '.')); } } catch (error) {}
-    document.getElementById('tasaValor').innerText = tasaOficial.toFixed(2) + " Bs";
+    try { let resTasa = await fetch('tasa.txt?v=' + new Date().getTime()); if (resTasa.ok) { let texto = await resTasa.text(); tasaOficial = parseFloat(texto.trim().replace(',', '.')); } } catch (error) { console.log("Tasa no encontrada, usando default."); }
+    let tasaEl = document.getElementById('tasaValor'); if(tasaEl) tasaEl.innerText = tasaOficial.toFixed(2) + " Bs";
+    
     try { let resRec = await fetch('recomendados.txt?v=' + new Date().getTime()); if (resRec.ok) { let textoRec = await resRec.text(); codigosRecomendados = textoRec.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); } } catch (error) {}
     try { let resDisp = await fetch('disponibles.txt?v=' + new Date().getTime()); if (resDisp.ok) { let textoDisp = await resDisp.text(); siempreDisponibles = textoDisp.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); } } catch (error) {}
     
-    // --- LECTOR DEL ARCHIVO DE BANNERS ---
     try { 
         let resBan = await fetch('banners.txt?v=' + new Date().getTime()); 
         if (resBan.ok) { 
-            let textoBan = await resBan.text(); 
-            let listaBanners = textoBan.split(/[\n,]+/).map(b => b.trim()).filter(b => b !== ""); 
+            let textoBan = await resBan.text(); let listaBanners = textoBan.split(/[\n,]+/).map(b => b.trim()).filter(b => b !== ""); 
             let contBanners = document.getElementById('contenedorBanners');
-            if(listaBanners.length > 0) {
-                contBanners.innerHTML = ''; // Limpiamos el texto por defecto
-                listaBanners.forEach(img => {
-                    // Si la foto no carga, ocultamos ese cuadrito roto (onerror)
-                    contBanners.innerHTML += `<div class="promo-banner"><img src="banners/${img}" alt="Promo" onerror="this.parentElement.style.display='none'"></div>`;
-                });
+            if(listaBanners.length > 0 && contBanners) {
+                contBanners.innerHTML = ''; 
+                listaBanners.forEach(img => { contBanners.innerHTML += `<div class="promo-banner"><img src="banners/${img}" alt="Promo" onerror="this.parentElement.style.display='none'"></div>`; });
             }
         } 
-    } catch (error) { console.log("Aún no se ha creado banners.txt"); }
+    } catch (error) { console.log("Sin banners.txt"); }
 }
 
 function imgFallback(imgElement, codigoProducto) {
@@ -64,13 +63,20 @@ function limpiarCategoria(texto) { if(!texto) return "Otros"; return texto.trim(
 async function cargarInventario() {
     await obtenerArchivosExternos(); toggleDireccion(); 
     try {
+        // MUCHO CUIDADO: Estos nombres deben coincidir EXACTO con los de GitHub
         const [pRaw, sRaw] = await Promise.all([ fetchCSV("Inventario Fisico general precio por unidad.csv"), fetchCSV("inventario por existencia.csv") ]); let mapa = {};
         pRaw.forEach(r => { if (r.length >= 5) { let cod = r[r.length-4]?.trim(), usd = r[r.length-1]?.trim(); let catLimpia = limpiarCategoria(r[r.length-5]); if (catLimpia === "CHARCUTERIA" || catLimpia === "FRUTERIA") return; if (cod && usd?.includes(',')) { mapa[cod] = { codigo: cod, Nombre: r[r.length-3]?.trim(), Cat: catLimpia, PrecioStr: usd, PrecioNum: parseFloat(usd.replace('.','').replace(',','.')), StockNum: 0, StockStr: "0,00" }; } } });
         sRaw.forEach(r => { let i = r.indexOf("Existencia"); if (i !== -1 && r.length > i + 8) { let cod = r[i+2]?.trim(); if (mapa[cod]) { mapa[cod].StockStr = r[i+8]?.trim(); mapa[cod].StockNum = parseFloat(mapa[cod].StockStr.replace('.','').replace(',','.')); } } });
         Object.values(mapa).forEach(prod => { if (siempreDisponibles.includes(prod.codigo)) { prod.StockNum = 999; prod.StockStr = "Disponible"; } });
         inventario = Object.values(mapa).filter(p => p.Nombre);
+        
+        if(inventario.length === 0) throw new Error("Inventario vacío");
+        
         actualizarCartCount(); generarCategorias(); aplicarFiltros(); 
-    } catch(e) { document.getElementById('lista-productos').innerHTML = '<p style="text-align:center; grid-column:span 2; color: red; margin-top: 20px;">Error al leer inventario.</p>'; }
+    } catch(e) { 
+        console.log("Error crítico leyendo CSV:", e);
+        document.getElementById('lista-productos').innerHTML = '<div style="grid-column: span 2; text-align: center; padding: 30px; border: 1px solid red; border-radius: 10px;"><h3 style="color:red;">Error de Conexión</h3><p style="font-size:12px; margin-top:10px;">Asegúrate de que los archivos CSV estén subidos a GitHub con los nombres exactos (respetando mayúsculas y espacios).</p></div>'; 
+    }
 }
 
 function levenshtein(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++){for(let j=1;j<=a.length;j++){if(b.charAt(i-1)===a.charAt(j-1)){m[i][j]=m[i-1][j-1];}else{m[i][j]=Math.min(m[i-1][j-1]+1,Math.min(m[i][j-1]+1,m[i-1][j]+1));}}}return m[b.length][a.length];}
@@ -88,7 +94,7 @@ document.addEventListener('click', (e) => { if(!e.target.closest('.search-contai
 
 function filtrarCategoria(cat, btn) { categoriaActual = cat; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); aplicarFiltros(); }
 function toggleFav(codigo) { let index = favoritos.indexOf(codigo); if(index === -1) { favoritos.push(codigo); mostrarToast("Agregado a favoritos ❤️"); } else { favoritos.splice(index, 1); } localStorage.setItem('gc_favs', JSON.stringify(favoritos)); aplicarFiltros(); }
-function compartirProducto(nombre, precio) { if (navigator.share) { navigator.share({ title: 'Gran Catador', text: `¡Mira esta bebida! ${nombre} a solo $${precio}.`, url: window.location.href }); } else { mostrarToast("Copiado al portapapeles."); } }
+function compartirProducto(nombre, precio) { if (navigator.share) { navigator.share({ title: 'Gran Catador', text: `¡Mira esta bebida! ${nombre} a solo $${precio}.`, url: window.location.href }).catch(e=>console.log(e)); } else { mostrarToast("Copiado al portapapeles."); } }
 
 function aplicarFiltros() {
     let q = quitarAcentos(document.getElementById('buscador').value.trim()); let sortOption = document.getElementById('ordenarSelect').value; let verAgotados = document.getElementById('chkAgotados').checked; let resultado = inventario;
@@ -98,8 +104,8 @@ function aplicarFiltros() {
     productosFiltradosGlobal = resultado; paginaActual = 1; document.getElementById('lista-productos').innerHTML = ''; renderizarPagina();
 }
 
-function codificarNombre(str) { return btoa(unescape(encodeURIComponent(str))); }
-function decodificarNombre(b64) { return decodeURIComponent(escape(atob(b64))); }
+function codificarNombre(str) { try { return btoa(unescape(encodeURIComponent(str))); } catch(e) { return btoa(str); } }
+function decodificarNombre(b64) { try { return decodeURIComponent(escape(atob(b64))); } catch(e) { return atob(b64); } }
 
 function renderizarPagina() {
     const cont = document.getElementById('lista-productos'); let inicio = (paginaActual - 1) * itemsPorPagina, fin = paginaActual * itemsPorPagina; let pedazo = productosFiltradosGlobal.slice(inicio, fin);
