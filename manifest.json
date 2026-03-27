@@ -1,10 +1,11 @@
 {
   "name": "Gran Catador",
-  "short_name": "Catador",
-  "start_url": "/grancatadorca/",
+  "short_name": "Gran Catador",
+  "description": "El placer de beber - Barinas",
+  "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#0B132B",
+  "theme_color": "#0B132B",
   "icons": [
     {
       "src": "logo.png",
