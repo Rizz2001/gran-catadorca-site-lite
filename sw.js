@@ -1,4 +1,4 @@
-const CACHE_NAME = 'grancatador-v7';
+const CACHE_NAME = 'grancatador-v8'; // Subimos la versión para limpiar la basura vieja
 const urlsToCache = [
   './',
   './index.html',
@@ -9,48 +9,31 @@ const urlsToCache = [
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
-// Instalación del Service Worker y Cacheo inicial
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
-    })
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
   self.skipWaiting();
 });
 
-// Limpieza de Caches viejos al actualizar
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then(cacheNames => Promise.all(
+      cacheNames.map(cacheName => {
+        if (cacheName !== CACHE_NAME) return caches.delete(cacheName);
+      })
+    ))
   );
   self.clients.claim();
 });
 
-// Estrategia de Red: Network First para archivos de texto/csv, Cache First para lo visual
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   
-  // Si busca los archivos de inventario o control, intentar siempre internet primero
-  if(url.pathname.endsWith('.txt') || url.pathname.endsWith('.csv')) {
-      event.respondWith(
-        fetch(event.request).catch(() => caches.match(event.request))
-      );
-      return;
+  // ESTRATEGIA SEGURA: Para HTML, JS, TXT y CSV -> SIEMPRE buscar internet primero. Si no hay señal, usar el guardado.
+  if (event.request.mode === 'navigate' || url.pathname.endsWith('.js') || url.pathname.endsWith('.html') || url.pathname.endsWith('.txt') || url.pathname.endsWith('.csv')) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    return;
   }
 
-  // Para el resto de cosas (imágenes, código), responder rápido con Cache si existe
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
-  );
+  // Para fotos y diseño -> Usar el guardado del teléfono para que cargue como un rayo.
+  event.respondWith(caches.match(event.request).then(response => response || fetch(event.request)));
 });
