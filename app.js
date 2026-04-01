@@ -49,7 +49,6 @@ async function obtenerArchivosExternos() {
     try { let resRec = await fetch('recomendados.txt?v=' + new Date().getTime()); if (resRec.ok) { let textoRec = await resRec.text(); codigosRecomendados = textoRec.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); } } catch (error) {}
     try { let resDisp = await fetch('disponibles.txt?v=' + new Date().getTime()); if (resDisp.ok) { let textoDisp = await resDisp.text(); siempreDisponibles = textoDisp.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); } } catch (error) {}
     
-    // SISTEMA DE CARRUSEL ANIMADO PARA LOS BANNERS
     try { 
         let resBan = await fetch('banners.txt?v=' + new Date().getTime()); 
         if (resBan.ok) { 
@@ -57,17 +56,15 @@ async function obtenerArchivosExternos() {
             let contBanners = document.getElementById('contenedorBanners');
             if(listaBanners.length > 0 && contBanners) {
                 contBanners.innerHTML = ''; 
-                
-                // Le damos formato de carrusel ocultando la barra de scroll
                 contBanners.style.display = 'flex'; 
                 contBanners.style.overflowX = 'hidden'; 
                 contBanners.style.scrollBehavior = 'smooth';
                 
-                listaBanners.forEach(img => { 
-                    contBanners.innerHTML += `<div class="promo-banner" style="min-width: 100%; flex-shrink: 0;"><img src="banners/${img}" alt="Promo" style="width: 100%; border-radius: 12px; display: block;" onerror="this.parentElement.style.display='none'"></div>`; 
+                listaBanners.forEach((img, idx) => { 
+                    let loadingAttr = idx === 0 ? '' : 'loading="lazy"';
+                    contBanners.innerHTML += `<div class="promo-banner" style="min-width: 100%; flex-shrink: 0;"><img src="banners/${img}" alt="Promo" style="width: 100%; border-radius: 12px; display: block;" ${loadingAttr} onerror="this.parentElement.style.display='none'"></div>`; 
                 });
 
-                // Motor que mueve los banners cada 3 segundos
                 let slideIndex = 0;
                 setInterval(() => {
                     let totalSlides = contBanners.children.length;
@@ -89,15 +86,7 @@ function imgFallback(imgElement, codigoProducto) {
 
 const fetchCSV = (u) => new Promise((resolve, reject) => { Papa.parse(u, { download: true, encoding: "latin-1", complete: (r) => resolve(r.data), error: (err) => reject(err) }) });
 function limpiarCategoria(texto) { if(!texto) return "Otros"; return texto.trim().replace(/\s+/g, ' ').toUpperCase(); }
-
-function obtenerCantCaja(categoria, nombre) {
-    let cat = categoria.toUpperCase(); let nom = nombre.toUpperCase();
-    if (nom.includes("COMBO") || nom.includes("VASO") || nom.includes("HIELO") || nom.includes("BOTELLA")) return 1;
-    if (cat.includes("CERVEZA") || nom.includes("POLAR") || nom.includes("ZULIA")) return 36;
-    if (cat.includes("VINO")) return 6;
-    if (cat.includes("AGUA") || cat.includes("REFRESCO")) { if (nom.includes("1.5") || nom.includes("2 L") || nom.includes("1.50") || nom.includes("2L")) return 6; return 24; }
-    return 12; 
-}
+function quitarAcentos(texto) { return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
 
 function cambiarModoVista(modo) {
     modoVistaGlobal = modo;
@@ -123,51 +112,104 @@ function inyectarInterruptor() {
 
 async function cargarInventario() {
     await obtenerArchivosExternos(); toggleDireccion(); inyectarInterruptor();
+    
+    let ahora = new Date().getTime();
+    let cacheTime = localStorage.getItem('gc_inv_time_v3');
+    let cacheData = localStorage.getItem('gc_inv_data');
+    
+    if (cacheTime && cacheData && (ahora - parseInt(cacheTime)) < 3600000) {
+        inventario = JSON.parse(cacheData);
+        actualizarCartCount(); generarCategorias(); aplicarFiltros(); 
+        console.log("Inventario cargado desde la Caché Ultrarrápida ⚡");
+        return;
+    }
+
     try {
-        const [pRaw, sRaw] = await Promise.all([ fetchCSV("listadepreciosporgrupo.csv"), fetchCSV("inventario por existencia.csv") ]); let mapa = {};
+        // LEYENDO LOS 3 ARCHIVOS SIMULTÁNEAMENTE (SIN INVENTAR PRECIOS)
+        const [pUnidadRaw, pCajaRaw, sRaw] = await Promise.all([ 
+            fetchCSV("Inventario Fisico general precio por unidad.csv"),
+            fetchCSV("listadepreciosporgrupo.csv"), 
+            fetchCSV("inventario por existencia.csv") 
+        ]); 
+        let mapa = {};
         
-        pRaw.forEach(r => { 
-            if (r.length >= 4) { 
-                let catBruto = r[r.length-4]; let cod = r[r.length-3]?.trim(); let nombreBruto = r[r.length-2]?.trim(); let bsStr = r[r.length-1]?.trim(); 
-                if (!cod || !bsStr || cod === "Código" || !bsStr.includes(',')) return;
+        // 1. CARGAR PRECIOS EXACTOS POR UNIDAD (Respeta tus Divisas y Bs del Excel)
+        pUnidadRaw.forEach(r => { 
+            if (r.length >= 5) { 
+                let catBruto = r[r.length-5]; let cod = r[r.length-4]?.trim(); let nombreBruto = r[r.length-3]?.trim(); let bsStr = r[r.length-2]?.trim(); let usdStr = r[r.length-1]?.trim();
+                
+                if (!cod || cod === "Código" || !usdStr || !usdStr.includes(',')) return;
 
                 let catLimpia = limpiarCategoria(catBruto); 
                 if (catLimpia === "CHARCUTERIA" || catLimpia === "FRUTERIA") return; 
                 
-                let bsCajaNum = parseFloat(bsStr.replace(/\./g,'').replace(',','.'));
-                let usdCajaNum = bsCajaNum / tasaOficial;
-
-                let cantCaja = obtenerCantCaja(catLimpia, nombreBruto);
-                let usdUnidadNum = usdCajaNum / cantCaja;
-                let bsUnidadNum = bsCajaNum / cantCaja;
-
+                let usdNum = parseFloat(usdStr.replace(/\./g,'').replace(',','.'));
+                
                 mapa[cod] = { 
                     codigo: cod, Nombre: nombreBruto, Cat: catLimpia, 
-                    PrecioStr: usdUnidadNum.toFixed(2), 
-                    PrecioNum: usdUnidadNum, 
-                    PrecioBsStr: bsUnidadNum.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}), 
-                    PrecioCajaUsd: usdCajaNum.toFixed(2), 
-                    PrecioCajaNum: usdCajaNum,
-                    PrecioCajaBsStr: bsCajaNum.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}), 
-                    StockNum: 0, StockStr: "0,00" 
+                    PrecioStr: usdNum.toFixed(2), 
+                    PrecioNum: usdNum, 
+                    PrecioBsStr: bsStr, 
+                    // Inicializamos los valores de caja en cero (Se llenan con el 2do archivo)
+                    PrecioCajaUsd: "0.00", 
+                    PrecioCajaNum: 0,
+                    PrecioCajaBsStr: "0,00", 
+                    StockNum: 0, StockStr: "0,00",
+                    TextoBusquedaLimpio: quitarAcentos(nombreBruto) + " " + quitarAcentos(catLimpia)
                 }; 
             } 
         });
+
+        // 2. CARGAR PRECIOS EXACTOS POR CAJA (Respeta los 0 si existen)
+        pCajaRaw.forEach(r => { 
+            if (r.length >= 4) { 
+                let catBruto = r[r.length-4]; let cod = r[r.length-3]?.trim(); let nombreBruto = r[r.length-2]?.trim(); let bsStr = r[r.length-1]?.trim(); 
+                if (!cod || cod === "Código" || !bsStr.includes(',')) return;
+                
+                let bsCajaNum = parseFloat(bsStr.replace(/\./g,'').replace(',','.'));
+                let usdCajaNum = bsCajaNum / tasaOficial;
+
+                if (mapa[cod]) {
+                    mapa[cod].PrecioCajaUsd = usdCajaNum.toFixed(2);
+                    mapa[cod].PrecioCajaNum = usdCajaNum;
+                    mapa[cod].PrecioCajaBsStr = bsStr; 
+                } else {
+                    let catLimpia = limpiarCategoria(catBruto); 
+                    if (catLimpia === "CHARCUTERIA" || catLimpia === "FRUTERIA") return; 
+
+                    mapa[cod] = { 
+                        codigo: cod, Nombre: nombreBruto, Cat: catLimpia, 
+                        PrecioStr: "0.00", 
+                        PrecioNum: 0, 
+                        PrecioBsStr: "0,00", 
+                        PrecioCajaUsd: usdCajaNum.toFixed(2), 
+                        PrecioCajaNum: usdCajaNum,
+                        PrecioCajaBsStr: bsStr, 
+                        StockNum: 0, StockStr: "0,00",
+                        TextoBusquedaLimpio: quitarAcentos(nombreBruto) + " " + quitarAcentos(catLimpia)
+                    }; 
+                }
+            } 
+        });
         
+        // 3. CARGAR EXISTENCIAS
         sRaw.forEach(r => { let i = r.indexOf("Existencia"); if (i !== -1 && r.length > i + 8) { let cod = r[i+2]?.trim(); if (mapa[cod]) { mapa[cod].StockStr = r[i+8]?.trim(); mapa[cod].StockNum = parseFloat(mapa[cod].StockStr.replace('.','').replace(',','.')); } } });
+        
         Object.values(mapa).forEach(prod => { if (siempreDisponibles.includes(prod.codigo)) { prod.StockNum = 999; prod.StockStr = "Disponible"; } });
         inventario = Object.values(mapa).filter(p => p.Nombre);
         
         if(inventario.length === 0) throw new Error("Inventario vacío");
         
+        localStorage.setItem('gc_inv_data', JSON.stringify(inventario));
+        localStorage.setItem('gc_inv_time_v3', ahora.toString());
+        
         actualizarCartCount(); generarCategorias(); aplicarFiltros(); 
     } catch(e) { 
-        document.getElementById('lista-productos').innerHTML = '<div style="grid-column: span 2; text-align: center; padding: 30px; border: 1px solid red; border-radius: 10px;"><h3 style="color:red;">Error de Conexión</h3><p style="font-size:12px; margin-top:10px;">Asegúrate de que el archivo listadepreciosporgrupo.csv esté subido a GitHub.</p></div>'; 
+        document.getElementById('lista-productos').innerHTML = '<div style="grid-column: span 2; text-align: center; padding: 30px; border: 1px solid red; border-radius: 10px;"><h3 style="color:red;">Error de Conexión</h3><p style="font-size:12px; margin-top:10px;">Asegúrate de haber subido los 3 archivos CSV a GitHub.</p></div>'; 
     }
 }
 
 function levenshtein(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++){for(let j=1;j<=a.length;j++){if(b.charAt(i-1)===a.charAt(j-1)){m[i][j]=m[i-1][j-1];}else{m[i][j]=Math.min(m[i-1][j-1]+1,Math.min(m[i][j-1]+1,m[i-1][j]+1));}}}return m[b.length][a.length];}
-function quitarAcentos(texto) { return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
 function debounceBusqueda(event) { clearTimeout(debounceTimer); const query = event.target.value.trim(); if(query.length < 2) { cerrarSugerencias(); aplicarFiltros(); return; } debounceTimer = setTimeout(() => mostrarSugerencias(query), 300); }
 
 const diccionarioSinonimos = { 'birra': 'cerveza', 'birras': 'cerveza', 'curda': 'licor', 'cana': 'ron', 'pasapalo': 'snack', 'pasapalos': 'snack', 'soda': 'refresco', 'fresco': 'refresco', 'chuche': 'snack', 'chucheria': 'snack' };
@@ -178,7 +220,7 @@ function mostrarSugerencias(q) {
     
     let coincidencias = inventario.filter(p => {
         if(p.StockNum <= 0) return false;
-        let textoCompleto = quitarAcentos(p.Nombre) + " " + quitarAcentos(p.Cat);
+        let textoCompleto = p.TextoBusquedaLimpio; 
         let words = textoCompleto.split(' ');
         return terminos.every(term => {
             if (textoCompleto.includes(term)) return true;
@@ -210,7 +252,7 @@ function aplicarFiltros() {
     if (q !== '') { 
         let terms = q.split(' ').filter(t => t.length > 0).map(t => diccionarioSinonimos[t] || t);
         resultado = resultado.filter(p => { 
-            let textoCompleto = quitarAcentos(p.Nombre) + " " + quitarAcentos(p.Cat); 
+            let textoCompleto = p.TextoBusquedaLimpio; 
             let words = textoCompleto.split(' ');
             return terms.every(term => { 
                 if (textoCompleto.includes(term)) return true; 
@@ -304,6 +346,7 @@ function abrirPerfil() {
 }
 function guardarPerfil() { localStorage.setItem('gc_nombre', document.getElementById('perfilNombre').value); localStorage.setItem('gc_direccion', document.getElementById('perfilDireccion').value); mostrarToast("Datos guardados ✅"); cerrarModal('modal-perfil', 'nav-home'); }
 function abrirAjustes() { cerrarModal('all'); setActiveNav('nav-settings'); document.getElementById('modal-ajustes').style.display = 'flex'; document.getElementById('toggleDarkMode').checked = document.body.classList.contains('dark-mode'); }
+
 function toggleDark() { document.body.classList.toggle('dark-mode'); localStorage.setItem('gc_dark', document.body.classList.contains('dark-mode')); }
 function cerrarModal(modalId, navAnterior = 'nav-home') { if(modalId === 'all') { document.querySelectorAll('.modal-fullscreen').forEach(m => m.style.display = 'none'); return; } const m = document.getElementById(modalId); if(m) m.style.display = 'none'; if(navAnterior === 'modal-ajustes') { abrirAjustes(); } else { setActiveNav(navAnterior); } }
 function guardarCarritoLS() { localStorage.setItem('gc_cart', JSON.stringify(carrito)); }
@@ -378,11 +421,16 @@ function enviarPedido() {
     let metodo = document.getElementById('metodoPagoSelect').value; msg += `💳 *Método de Pago:* ${metodo}\n`;
     if(metodo === 'Efectivo') { let pago = parseFloat(document.getElementById('montoPago').value) || 0; if(pago > totalCarrito) { msg += `💵 _Paga con $${pago.toFixed(2)}_\n🟢 _Requiere vuelto: $${(pago - totalCarrito).toFixed(2)}_\n`; } } else { msg += `📎 _[Capture adjunto en el siguiente mensaje]_\n`; }
     msg += `\n💰 *TOTAL A PAGAR: $${totalCarrito.toFixed(2)}*\n💱 _(Tasa BCV: ${tasaOficial.toFixed(2)} Bs)_`; 
+    
+    localStorage.removeItem('gc_inv_time_v3');
+    
     carrito = {}; guardarCarritoLS(); actualizarCartCount(); cerrarModal('modal-cart', 'nav-home'); window.open(`https://wa.me/584245496366?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 function agregarAlCarritoB64(b64, p, btn, c = false, img = '', esCaja = false) { agregarAlCarrito(decodificarNombre(b64), p, btn, c, img, esCaja); }
 function compartirProductoB64(b64, p) { compartirProducto(decodificarNombre(b64), p); }
 function cambiarCantB64(b64, d) { cambiarCant(decodificarNombre(b64), d); }
+
+window.limpiarCacheAdmin = function() { localStorage.removeItem('gc_inv_time_v3'); localStorage.removeItem('gc_inv_data'); alert('Caché limpiada.'); location.reload(); }
 
 window.onload = cargarInventario;
