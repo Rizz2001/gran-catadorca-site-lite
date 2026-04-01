@@ -60,13 +60,17 @@ function imgFallback(imgElement, codigoProducto) {
 const fetchCSV = (u) => new Promise((resolve, reject) => { Papa.parse(u, { download: true, encoding: "latin-1", complete: (r) => resolve(r.data), error: (err) => reject(err) }) });
 function limpiarCategoria(texto) { if(!texto) return "Otros"; return texto.trim().replace(/\s+/g, ' ').toUpperCase(); }
 
-// CEREBRO MATEMÁTICO OCULTO PARA CALCULAR PRECIO CAJA
+// CEREBRO MATEMÁTICO: Divide la caja para sacar el precio de la unidad sin mostrar cantidades locas
 function obtenerCantCaja(categoria, nombre) {
     let cat = categoria.toUpperCase(); let nom = nombre.toUpperCase();
+    if (nom.includes("COMBO") || nom.includes("VASO") || nom.includes("HIELO") || nom.includes("BOTELLA")) return 1;
     if (cat.includes("CERVEZA") || nom.includes("POLAR") || nom.includes("ZULIA")) return 36;
     if (cat.includes("VINO")) return 6;
-    if (cat.includes("AGUA") || cat.includes("REFRESCO") || nom.includes("COCA COLA")) return 24;
-    return 12; 
+    if (cat.includes("AGUA") || cat.includes("REFRESCO")) {
+        if (nom.includes("1.5") || nom.includes("2 L") || nom.includes("1.50") || nom.includes("2L")) return 6;
+        return 24;
+    }
+    return 12; // Estándar general
 }
 
 async function cargarInventario() {
@@ -82,13 +86,22 @@ async function cargarInventario() {
                 let catLimpia = limpiarCategoria(catBruto); 
                 if (catLimpia === "CHARCUTERIA" || catLimpia === "FRUTERIA") return; 
                 
-                let bsNum = parseFloat(bsStr.replace(/\./g,'').replace(',','.'));
-                let usdNum = bsNum / tasaOficial;
-                let usdStr = usdNum.toFixed(2);
+                // Leemos el precio que viene del CSV (Que resulta ser el de la Caja)
+                let bsCajaNum = parseFloat(bsStr.replace(/\./g,'').replace(',','.'));
+                let usdCajaNum = bsCajaNum / tasaOficial;
+
+                // Calculamos cuánto vale la unidad dividiendo el precio de la caja
+                let cantCaja = obtenerCantCaja(catLimpia, nombreBruto);
+                let usdUnidadNum = usdCajaNum / cantCaja;
+                let bsUnidadNum = bsCajaNum / cantCaja;
 
                 mapa[cod] = { 
                     codigo: cod, Nombre: nombreBruto, Cat: catLimpia, 
-                    PrecioStr: usdStr, PrecioNum: usdNum, PrecioBsStr: bsStr, 
+                    PrecioStr: usdUnidadNum.toFixed(2), // PRECIO PRINCIPAL AHORA ES UNIDAD
+                    PrecioNum: usdUnidadNum, 
+                    PrecioBsStr: bsUnidadNum.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}), 
+                    PrecioCajaUsd: usdCajaNum.toFixed(2), // PRECIO DE CAJA SE GUARDA SEPARADO
+                    PrecioCajaNum: usdCajaNum,
                     StockNum: 0, StockStr: "0,00" 
                 }; 
             } 
@@ -141,10 +154,6 @@ function renderizarPagina() {
     pedazo.forEach(p => {
         const isFav = favoritos.includes(p.codigo); const isAgotado = p.StockNum <= 0; const d = document.createElement('div'); d.className = `producto-card ${isAgotado ? 'agotado' : ''}`; let nombreB64 = codificarNombre(p.Nombre);
         
-        let cantCaja = obtenerCantCaja(p.Cat, p.Nombre);
-        let precioCajaUsd = (p.PrecioNum * cantCaja).toFixed(2);
-
-        // SE ELIMINÓ CUALQUIER REFERENCIA AL NÚMERO DE UNIDADES DE CARA AL PÚBLICO
         d.innerHTML = `
             ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
             <i class="fa-${isFav ? 'solid' : 'regular'} fa-heart btn-fav ${isFav ? 'active' : ''}" onclick="toggleFav('${p.codigo}')"></i>
@@ -153,13 +162,14 @@ function renderizarPagina() {
             <p class="producto-stock" style="margin-bottom:2px;">Disp: ${p.StockStr}</p>
             
             <p class="producto-precio">$${p.PrecioStr} <span style="font-size:11px; color:var(--texto-claro); display:inline-block; font-weight:500;">/ ${p.PrecioBsStr} Bs</span></p>
-            <p style="font-size:11px; color:var(--dorado); font-weight:bold; margin-top:2px; margin-bottom: 30px;">📦 Caja: $${precioCajaUsd}</p>
+            
+            <p style="font-size:11px; color:var(--dorado); font-weight:bold; margin-top:2px; margin-bottom: 30px;">📦 Caja: $${p.PrecioCajaUsd}</p>
             
             <button class="btn-share" style="bottom: 12px; right: 90px;" onclick="compartirProductoB64('${nombreB64}', '${p.PrecioStr}')"><i class="fa-solid fa-share-nodes"></i></button>
             
             <button class="btn-add ${isAgotado ? 'disabled' : ''}" style="width: 32px; border-radius: 8px; right: 50px; font-size: 13px;" title="Agregar Unidad" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioNum}, this, false, 'img/${p.codigo}.webp', false)"`}>🍾</button>
             
-            <button class="btn-add ${isAgotado ? 'disabled' : ''}" style="width: 32px; border-radius: 8px; right: 12px; background: var(--dorado); color: black; font-size: 13px;" title="Agregar Caja" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioNum * cantCaja}, this, false, 'img/${p.codigo}.webp', true)"`}>📦</button>
+            <button class="btn-add ${isAgotado ? 'disabled' : ''}" style="width: 32px; border-radius: 8px; right: 12px; background: var(--dorado); color: black; font-size: 13px;" title="Agregar Caja" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioCajaNum}, this, false, 'img/${p.codigo}.webp', true)"`}>📦</button>
         `;
         fragmento.appendChild(d);
     });
