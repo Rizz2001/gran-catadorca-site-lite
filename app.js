@@ -146,15 +146,34 @@ async function cargarInventario() {
     }
 }
 
+function levenshtein(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++){for(let j=1;j<=a.length;j++){if(b.charAt(i-1)===a.charAt(j-1)){m[i][j]=m[i-1][j-1];}else{m[i][j]=Math.min(m[i-1][j-1]+1,Math.min(m[i][j-1]+1,m[i-1][j]+1));}}}return m[b.length][a.length];}
 function quitarAcentos(texto) { return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
 function debounceBusqueda(event) { clearTimeout(debounceTimer); const query = event.target.value.trim(); if(query.length < 2) { cerrarSugerencias(); aplicarFiltros(); return; } debounceTimer = setTimeout(() => mostrarSugerencias(query), 300); }
 
+// DICCIONARIO CRIOLLO INTELIGENTE
+const diccionarioSinonimos = { 'birra': 'cerveza', 'birras': 'cerveza', 'curda': 'licor', 'cana': 'ron', 'pasapalo': 'snack', 'pasapalos': 'snack', 'soda': 'refresco', 'fresco': 'refresco', 'chuche': 'snack', 'chucheria': 'snack' };
+
 function mostrarSugerencias(q) {
-    let queryLimpia = quitarAcentos(q); let coincidencias = inventario.filter(p => p.StockNum > 0 && quitarAcentos(p.Nombre).includes(queryLimpia)).slice(0, 5); const cont = document.getElementById('search-suggestions');
+    let qLimpio = quitarAcentos(q);
+    let terminos = qLimpio.split(' ').filter(t => t.length > 0).map(t => diccionarioSinonimos[t] || t);
+    
+    let coincidencias = inventario.filter(p => {
+        if(p.StockNum <= 0) return false;
+        let textoCompleto = quitarAcentos(p.Nombre) + " " + quitarAcentos(p.Cat);
+        let words = textoCompleto.split(' ');
+        return terminos.every(term => {
+            if (textoCompleto.includes(term)) return true;
+            if (term.length >= 4) return words.some(w => levenshtein(term, w) <= (term.length >= 6 ? 2 : 1));
+            return false;
+        });
+    }).slice(0, 5);
+    
+    const cont = document.getElementById('search-suggestions');
     if(coincidencias.length === 0) { cerrarSugerencias(); aplicarFiltros(); return; } cont.innerHTML = '';
     coincidencias.forEach(p => { const div = document.createElement('div'); div.className = 'suggestion-item'; div.innerHTML = `<img src="img/${p.codigo}.webp" onerror="imgFallback(this, '${p.codigo}')"><span>${p.Nombre}</span>`; div.onclick = () => { document.getElementById('buscador').value = p.Nombre; cerrarSugerencias(); aplicarFiltros(); }; cont.appendChild(div); });
     cont.style.display = 'block';
 }
+
 function cerrarSugerencias() { document.getElementById('search-suggestions').style.display = 'none'; }
 document.addEventListener('click', (e) => { if(!e.target.closest('.search-container')) cerrarSugerencias(); });
 
@@ -162,6 +181,7 @@ function filtrarCategoria(cat, btn) { categoriaActual = cat; document.querySelec
 function toggleFav(codigo) { let index = favoritos.indexOf(codigo); if(index === -1) { favoritos.push(codigo); mostrarToast("Agregado a favoritos ❤️"); } else { favoritos.splice(index, 1); } localStorage.setItem('gc_favs', JSON.stringify(favoritos)); aplicarFiltros(); }
 function compartirProducto(nombre, precio) { if (navigator.share) { navigator.share({ title: 'Gran Catador', text: `¡Mira esta bebida! ${nombre} a solo $${precio}.`, url: window.location.href }).catch(e=>console.log(e)); } else { mostrarToast("Copiado al portapapeles."); } }
 
+// FILTRO INTELIGENTE CON IA BÁSICA Y SINÓNIMOS
 function aplicarFiltros() {
     let q = quitarAcentos(document.getElementById('buscador').value.trim()); let sortOption = document.getElementById('ordenarSelect').value; let verAgotados = document.getElementById('chkAgotados').checked; let resultado = inventario;
     
@@ -169,12 +189,24 @@ function aplicarFiltros() {
     if (categoriaActual === 'Favoritos') resultado = resultado.filter(p => favoritos.includes(p.codigo)); 
     else if (categoriaActual !== 'Todos') resultado = resultado.filter(p => p.Cat === categoriaActual);
     
-    // CORRECCIÓN DEL BUSCADOR: Ahora la búsqueda es exacta y directa.
     if (q !== '') { 
-        let terms = q.split(' ').filter(t => t.length > 0); 
+        // Convertimos la búsqueda en términos, y aplicamos el diccionario de sinónimos
+        let terms = q.split(' ').filter(t => t.length > 0).map(t => diccionarioSinonimos[t] || t);
+        
         resultado = resultado.filter(p => { 
-            let nom = quitarAcentos(p.Nombre); 
-            return terms.every(term => nom.includes(term)); 
+            let textoCompleto = quitarAcentos(p.Nombre) + " " + quitarAcentos(p.Cat); 
+            let words = textoCompleto.split(' ');
+            
+            return terms.every(term => { 
+                // 1. Si coincide exacto en nombre o categoría, pasa.
+                if (textoCompleto.includes(term)) return true; 
+                
+                // 2. IA de Autocorrector: Si la palabra tiene más de 4 letras, perdonamos 1 o 2 errores ortográficos.
+                if (term.length >= 4) {
+                    return words.some(w => levenshtein(term, w) <= (term.length >= 6 ? 2 : 1));
+                }
+                return false;
+            }); 
         }); 
     }
     
@@ -193,15 +225,14 @@ function decodificarNombre(b64) { try { return decodeURIComponent(escape(atob(b6
 function renderizarPagina() {
     const cont = document.getElementById('lista-productos'); 
     
-    // CORRECCIÓN DEL BUG CLONADOR: Se obliga a vaciar el lienzo siempre antes de inyectar
-    if (paginaActual === 1) cont.innerHTML = ''; 
+    if (paginaActual === 1) cont.innerHTML = ''; // MANTENEMOS EL CANDADO ANTI-CLONACIÓN
     
     let inicio = (paginaActual - 1) * itemsPorPagina, fin = paginaActual * itemsPorPagina; 
     let pedazo = productosFiltradosGlobal.slice(inicio, fin);
     
     if(productosFiltradosGlobal.length === 0) { 
         if(paginaActual === 1) {
-            cont.innerHTML = `<div style="grid-column: span 2; text-align: center; padding: 40px 20px; color: var(--texto-claro);"><i class="fa-solid fa-wine-bottle" style="font-size: 60px; opacity: 0.3; margin-bottom: 15px;"></i><h3 style="color: var(--texto-oscuro); font-size: 16px; font-weight: bold;">¿Aún no tienes sed?</h3><p style="font-size: 13px; margin-top: 5px;">No encontramos botellas en esta sección.</p><button onclick="irInicio()" class="cat-btn active" style="margin: 20px auto 0 auto; padding: 10px 20px;">Ver todo el catálogo</button></div>`; 
+            cont.innerHTML = `<div style="grid-column: span 2; text-align: center; padding: 40px 20px; color: var(--texto-claro);"><i class="fa-solid fa-wine-bottle" style="font-size: 60px; opacity: 0.3; margin-bottom: 15px;"></i><h3 style="color: var(--texto-oscuro); font-size: 16px; font-weight: bold;">¿Aún no tienes sed?</h3><p style="font-size: 13px; margin-top: 5px;">No encontramos botellas con esa descripción.</p><button onclick="irInicio()" class="cat-btn active" style="margin: 20px auto 0 auto; padding: 10px 20px;">Ver todo el catálogo</button></div>`; 
             document.getElementById('btn-cargar-mas').style.display = 'none'; 
         }
         return; 
