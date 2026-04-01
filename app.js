@@ -33,7 +33,7 @@ function checkHorario() {
 checkHorario(); setInterval(checkHorario, 60000);
 
 async function obtenerArchivosExternos() {
-    try { let resTasa = await fetch('tasa.txt?v=' + new Date().getTime()); if (resTasa.ok) { let texto = await resTasa.text(); tasaOficial = parseFloat(texto.trim().replace(',', '.')); } } catch (error) { console.log("Tasa no encontrada, usando default."); }
+    try { let resTasa = await fetch('tasa.txt?v=' + new Date().getTime()); if (resTasa.ok) { let texto = await resTasa.text(); tasaOficial = parseFloat(texto.trim().replace(',', '.')); } } catch (error) { console.log("Tasa no encontrada"); }
     let tasaEl = document.getElementById('tasaValor'); if(tasaEl) tasaEl.innerText = tasaOficial.toFixed(2) + " Bs";
     
     try { let resRec = await fetch('recomendados.txt?v=' + new Date().getTime()); if (resRec.ok) { let textoRec = await resRec.text(); codigosRecomendados = textoRec.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); } } catch (error) {}
@@ -60,39 +60,36 @@ function imgFallback(imgElement, codigoProducto) {
 const fetchCSV = (u) => new Promise((resolve, reject) => { Papa.parse(u, { download: true, encoding: "latin-1", complete: (r) => resolve(r.data), error: (err) => reject(err) }) });
 function limpiarCategoria(texto) { if(!texto) return "Otros"; return texto.trim().replace(/\s+/g, ' ').toUpperCase(); }
 
+// CEREBRO MATEMÁTICO OCULTO PARA CALCULAR PRECIO CAJA
+function obtenerCantCaja(categoria, nombre) {
+    let cat = categoria.toUpperCase(); let nom = nombre.toUpperCase();
+    if (cat.includes("CERVEZA") || nom.includes("POLAR") || nom.includes("ZULIA")) return 36;
+    if (cat.includes("VINO")) return 6;
+    if (cat.includes("AGUA") || cat.includes("REFRESCO") || nom.includes("COCA COLA")) return 24;
+    return 12; 
+}
+
 async function cargarInventario() {
     await obtenerArchivosExternos(); toggleDireccion(); 
     try {
-        // LECTURA DEL NUEVO ARCHIVO listadepreciosporgrupo.csv
         const [pRaw, sRaw] = await Promise.all([ fetchCSV("listadepreciosporgrupo.csv"), fetchCSV("inventario por existencia.csv") ]); let mapa = {};
         
         pRaw.forEach(r => { 
             if (r.length >= 4) { 
-                let catBruto = r[r.length-4];
-                let cod = r[r.length-3]?.trim();
-                let nombreBruto = r[r.length-2]?.trim();
-                let bsStr = r[r.length-1]?.trim(); 
-                
-                // Evitamos líneas vacías o de encabezado
+                let catBruto = r[r.length-4]; let cod = r[r.length-3]?.trim(); let nombreBruto = r[r.length-2]?.trim(); let bsStr = r[r.length-1]?.trim(); 
                 if (!cod || !bsStr || cod === "Código" || !bsStr.includes(',')) return;
 
                 let catLimpia = limpiarCategoria(catBruto); 
                 if (catLimpia === "CHARCUTERIA" || catLimpia === "FRUTERIA") return; 
                 
-                // CONVERSIÓN DE BS A DÓLARES AUTOMÁTICA
                 let bsNum = parseFloat(bsStr.replace(/\./g,'').replace(',','.'));
                 let usdNum = bsNum / tasaOficial;
                 let usdStr = usdNum.toFixed(2);
 
                 mapa[cod] = { 
-                    codigo: cod, 
-                    Nombre: nombreBruto, 
-                    Cat: catLimpia, 
-                    PrecioStr: usdStr,    // Mantenemos el USD como principal
-                    PrecioNum: usdNum,    // Mantenemos el USD como principal
-                    PrecioBsStr: bsStr,   // Guardamos el Bs original
-                    StockNum: 0, 
-                    StockStr: "0,00" 
+                    codigo: cod, Nombre: nombreBruto, Cat: catLimpia, 
+                    PrecioStr: usdStr, PrecioNum: usdNum, PrecioBsStr: bsStr, 
+                    StockNum: 0, StockStr: "0,00" 
                 }; 
             } 
         });
@@ -105,7 +102,6 @@ async function cargarInventario() {
         
         actualizarCartCount(); generarCategorias(); aplicarFiltros(); 
     } catch(e) { 
-        console.log("Error crítico leyendo CSV:", e);
         document.getElementById('lista-productos').innerHTML = '<div style="grid-column: span 2; text-align: center; padding: 30px; border: 1px solid red; border-radius: 10px;"><h3 style="color:red;">Error de Conexión</h3><p style="font-size:12px; margin-top:10px;">Asegúrate de que el archivo listadepreciosporgrupo.csv esté subido a GitHub.</p></div>'; 
     }
 }
@@ -144,8 +140,27 @@ function renderizarPagina() {
     const fragmento = document.createDocumentFragment();
     pedazo.forEach(p => {
         const isFav = favoritos.includes(p.codigo); const isAgotado = p.StockNum <= 0; const d = document.createElement('div'); d.className = `producto-card ${isAgotado ? 'agotado' : ''}`; let nombreB64 = codificarNombre(p.Nombre);
-        // SE AGREGA EL PRECIO EN BS DEBAJO DEL PRECIO EN USD
-        d.innerHTML = `${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}<i class="fa-${isFav ? 'solid' : 'regular'} fa-heart btn-fav ${isFav ? 'active' : ''}" onclick="toggleFav('${p.codigo}')"></i><img loading="lazy" src="img/${p.codigo}.webp" data-attempts="0" onerror="imgFallback(this, '${p.codigo}')" alt="${p.Nombre}"><h3 class="producto-titulo">${p.Nombre}</h3><p class="producto-stock">Disp: ${p.StockStr}</p><p class="producto-precio">$${p.PrecioStr} <span style="font-size:11px; color:var(--texto-claro); display:block; font-weight:500;">${p.PrecioBsStr} Bs</span></p><button class="btn-share" onclick="compartirProductoB64('${nombreB64}', '${p.PrecioStr}')"><i class="fa-solid fa-share-nodes"></i></button><button class="btn-add ${isAgotado ? 'disabled' : ''}" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioNum}, this, false, 'img/${p.codigo}.webp')"`}><i class="fa-solid fa-plus"></i></button>`;
+        
+        let cantCaja = obtenerCantCaja(p.Cat, p.Nombre);
+        let precioCajaUsd = (p.PrecioNum * cantCaja).toFixed(2);
+
+        // SE ELIMINÓ CUALQUIER REFERENCIA AL NÚMERO DE UNIDADES DE CARA AL PÚBLICO
+        d.innerHTML = `
+            ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
+            <i class="fa-${isFav ? 'solid' : 'regular'} fa-heart btn-fav ${isFav ? 'active' : ''}" onclick="toggleFav('${p.codigo}')"></i>
+            <img loading="lazy" src="img/${p.codigo}.webp" data-attempts="0" onerror="imgFallback(this, '${p.codigo}')" alt="${p.Nombre}">
+            <h3 class="producto-titulo">${p.Nombre}</h3>
+            <p class="producto-stock" style="margin-bottom:2px;">Disp: ${p.StockStr}</p>
+            
+            <p class="producto-precio">$${p.PrecioStr} <span style="font-size:11px; color:var(--texto-claro); display:inline-block; font-weight:500;">/ ${p.PrecioBsStr} Bs</span></p>
+            <p style="font-size:11px; color:var(--dorado); font-weight:bold; margin-top:2px; margin-bottom: 30px;">📦 Caja: $${precioCajaUsd}</p>
+            
+            <button class="btn-share" style="bottom: 12px; right: 90px;" onclick="compartirProductoB64('${nombreB64}', '${p.PrecioStr}')"><i class="fa-solid fa-share-nodes"></i></button>
+            
+            <button class="btn-add ${isAgotado ? 'disabled' : ''}" style="width: 32px; border-radius: 8px; right: 50px; font-size: 13px;" title="Agregar Unidad" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioNum}, this, false, 'img/${p.codigo}.webp', false)"`}>🍾</button>
+            
+            <button class="btn-add ${isAgotado ? 'disabled' : ''}" style="width: 32px; border-radius: 8px; right: 12px; background: var(--dorado); color: black; font-size: 13px;" title="Agregar Caja" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioNum * cantCaja}, this, false, 'img/${p.codigo}.webp', true)"`}>📦</button>
+        `;
         fragmento.appendChild(d);
     });
     cont.appendChild(fragmento); if (fin < productosFiltradosGlobal.length) document.getElementById('btn-cargar-mas').style.display = 'block'; else document.getElementById('btn-cargar-mas').style.display = 'none';
@@ -185,19 +200,24 @@ function animarAlCarrito(btnElement, imgSrc) {
     setTimeout(() => { flyingImg.remove(); cartIcon.style.transform = 'scale(1.2) rotate(-10deg)'; setTimeout(() => cartIcon.style.transform = 'scale(1) rotate(0)', 200); }, 600);
 }
 
-function agregarAlCarrito(nombre, precio, btnElement, isCross = false, imgSrc = '') {
-    if(carrito[nombre]) carrito[nombre].cantidad++; else carrito[nombre] = { precio: precio, cantidad: 1 }; guardarCarritoLS(); actualizarCartCount(); 
+// LOGICA DE CARRITO: SEPARA PRODUCTO EN "(UNIDAD)" O "(CAJA)"
+function agregarAlCarrito(nombre, precio, btnElement, isCross = false, imgSrc = '', esCaja = false) {
+    let nombreFinal = esCaja ? `${nombre} (CAJA)` : `${nombre} (UNIDAD)`;
+    
+    if(carrito[nombreFinal]) carrito[nombreFinal].cantidad++; else carrito[nombreFinal] = { precio: precio, cantidad: 1 }; 
+    guardarCarritoLS(); actualizarCartCount(); 
+    
     if(btnElement && imgSrc) animarAlCarrito(btnElement, imgSrc);
-    if(btnElement) { let iconoOriginal = btnElement.innerHTML; btnElement.innerHTML = '<i class="fa-solid fa-check"></i>'; btnElement.style.background = "#fff"; btnElement.style.color = "var(--verde-btn)"; setTimeout(() => { btnElement.innerHTML = iconoOriginal; btnElement.style.background = "var(--verde-btn)"; btnElement.style.color = "#fff"; }, 500); }
-    if(!isCross) { let prod = inventario.find(x => x.Nombre === nombre); if(prod) { let c = prod.Cat.toUpperCase(); if(c.includes("RON") || c.includes("WHISKY") || c.includes("VODKA") || c.includes("GINEBRA") || c.includes("LICOR") || c.includes("TEQUILA")) { sugerirAcompañante(); } } }
+    if(btnElement) { let iconoOriginal = btnElement.innerHTML; btnElement.innerHTML = '<i class="fa-solid fa-check"></i>'; btnElement.style.background = "#fff"; btnElement.style.color = "var(--verde-btn)"; setTimeout(() => { btnElement.innerHTML = iconoOriginal; btnElement.style.background = esCaja ? "var(--dorado)" : "var(--verde-btn)"; btnElement.style.color = esCaja ? "black" : "#fff"; }, 500); }
+    
+    if(!isCross && !esCaja) { let prod = inventario.find(x => x.Nombre === nombre); if(prod) { let c = prod.Cat.toUpperCase(); if(c.includes("RON") || c.includes("WHISKY") || c.includes("VODKA") || c.includes("GINEBRA") || c.includes("LICOR") || c.includes("TEQUILA")) { sugerirAcompañante(); } } }
 }
 
 function sugerirAcompañante() {
     let sugerencias = [];
     if(codigosRecomendados.length > 0) { sugerencias = inventario.filter(p => codigosRecomendados.includes(p.codigo) && p.StockNum > 0).slice(0, 3); } else { sugerencias = inventario.filter(p => (p.Nombre.includes("HIELO") || p.Nombre.includes("COLA") || p.Nombre.includes("REFRESCO")) && p.StockNum > 0).slice(0, 3); }
     if(sugerencias.length > 0) { let cont = document.getElementById('cross-sell-items'); cont.innerHTML = ''; sugerencias.forEach(p => { let nombreB64 = codificarNombre(p.Nombre); 
-        // MOSTRAR PRECIO EN BS EN LOS ACOMPAÑANTES TAMBIÉN
-        cont.innerHTML += `<div style="min-width:110px; border:1px solid var(--borde-color); border-radius:12px; padding:10px; text-align:center; background:var(--item-bg);"><img src="img/${p.codigo}.webp" onerror="imgFallback(this, '${p.codigo}')" style="height:55px; object-fit:contain; margin-bottom:5px;"><p style="font-size:10px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--texto-oscuro);">${p.Nombre}</p><p style="font-size:13px; color:var(--dorado); font-weight:bold;">$${p.PrecioStr}</p><p style="font-size:10px; color:var(--texto-claro); margin-top:-2px;">${p.PrecioBsStr} Bs</p><button onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioNum}, this, true, 'img/${p.codigo}.webp'); cerrarCrossSell();" style="background:var(--verde-btn); color:white; border:none; padding:8px; border-radius:8px; font-size:11px; font-weight:bold; width:100%; margin-top:5px; cursor:pointer;"><i class="fa-solid fa-plus"></i> Añadir</button></div>`; }); document.getElementById('modal-cross-sell').style.display = 'flex'; }
+        cont.innerHTML += `<div style="min-width:110px; border:1px solid var(--borde-color); border-radius:12px; padding:10px; text-align:center; background:var(--item-bg);"><img src="img/${p.codigo}.webp" onerror="imgFallback(this, '${p.codigo}')" style="height:55px; object-fit:contain; margin-bottom:5px;"><p style="font-size:10px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--texto-oscuro);">${p.Nombre}</p><p style="font-size:13px; color:var(--dorado); font-weight:bold;">$${p.PrecioStr}</p><p style="font-size:10px; color:var(--texto-claro); margin-top:-2px;">${p.PrecioBsStr} Bs</p><button onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioNum}, this, true, 'img/${p.codigo}.webp', false); cerrarCrossSell();" style="background:var(--verde-btn); color:white; border:none; padding:8px; border-radius:8px; font-size:11px; font-weight:bold; width:100%; margin-top:5px; cursor:pointer;"><i class="fa-solid fa-plus"></i> Añadir</button></div>`; }); document.getElementById('modal-cross-sell').style.display = 'flex'; }
 }
 
 function cerrarCrossSell() { document.getElementById('modal-cross-sell').style.display = 'none'; }
@@ -212,7 +232,6 @@ function renderizarCarrito() {
     document.getElementById('checkout-sections').style.display = 'block'; 
     for(let nombre in carrito) { 
         let nombreB64 = codificarNombre(nombre); let item = carrito[nombre]; let sub = item.precio * item.cantidad; totalCarrito += sub; 
-        // MOSTRAR TASA EN EL CARRITO
         lista.innerHTML += `<div class="cart-item"><div class="cart-item-info"><p class="cart-item-title">${nombre}</p><p class="cart-item-price">$${item.precio.toFixed(2)} <span style="font-size:11px; color:var(--texto-claro); font-weight:normal;">/ ${(item.precio * tasaOficial).toLocaleString('es-VE', {minimumFractionDigits:2})} Bs</span></p></div><div class="cart-controls"><button class="cart-btn" onclick="cambiarCantB64('${nombreB64}', -1)">-</button><span style="font-size:13px; font-weight:bold; width:15px; text-align:center;">${item.cantidad}</span><button class="cart-btn" onclick="cambiarCantB64('${nombreB64}', 1)">+</button></div></div>`; 
     }
     document.getElementById('totalUsdModal').innerText = `$${totalCarrito.toFixed(2)}`; document.getElementById('totalBsModal').innerText = `${(totalCarrito * tasaOficial).toLocaleString('es-VE', {minimumFractionDigits:2})} Bs`; calcularVuelto();
@@ -247,7 +266,7 @@ function enviarPedido() {
     carrito = {}; guardarCarritoLS(); actualizarCartCount(); cerrarModal('modal-cart', 'nav-home'); window.open(`https://wa.me/584245496366?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-function agregarAlCarritoB64(b64, p, btn, c = false, img = '') { agregarAlCarrito(decodificarNombre(b64), p, btn, c, img); }
+function agregarAlCarritoB64(b64, p, btn, c = false, img = '', esCaja = false) { agregarAlCarrito(decodificarNombre(b64), p, btn, c, img, esCaja); }
 function compartirProductoB64(b64, p) { compartirProducto(decodificarNombre(b64), p); }
 function cambiarCantB64(b64, d) { cambiarCant(decodificarNombre(b64), d); }
 
