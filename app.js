@@ -5,10 +5,8 @@ let tasaOficial = 36.25; let totalCarrito = 0; let categoriaActual = 'LICORES'; 
 let isTiendaAbierta = true; let codigosRecomendados = []; let siempreDisponibles = []; 
 let productosFiltradosGlobal = []; let itemsPorPagina = 30; let paginaActual = 1;
 
-// NUEVO: Estado global para saber qué está viendo el cliente
 let modoVistaGlobal = 'unidad'; 
 
-// NUEVO: Inyectar el diseño del interruptor sin tocar el HTML
 const styleT = document.createElement('style');
 styleT.innerHTML = `
     .toggle-modo-container { display: flex; justify-content: center; margin: 15px 0 10px 0; background: var(--item-bg); border-radius: 12px; padding: 5px; border: 1px solid var(--borde-color); }
@@ -81,13 +79,12 @@ function obtenerCantCaja(categoria, nombre) {
     return 12; 
 }
 
-// NUEVO: Función para cambiar el interruptor
 function cambiarModoVista(modo) {
     modoVistaGlobal = modo;
     document.getElementById('btn-modo-unidad').classList.remove('active');
     document.getElementById('btn-modo-caja').classList.remove('active');
     document.getElementById('btn-modo-' + modo).classList.add('active');
-    renderizarPagina(); // Recarga los precios en tiempo real
+    aplicarFiltros(); 
 }
 
 function inyectarInterruptor() {
@@ -131,7 +128,7 @@ async function cargarInventario() {
                     PrecioBsStr: bsUnidadNum.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}), 
                     PrecioCajaUsd: usdCajaNum.toFixed(2), 
                     PrecioCajaNum: usdCajaNum,
-                    PrecioCajaBsStr: bsCajaNum.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}), // Guardamos el Bs de la caja
+                    PrecioCajaBsStr: bsCajaNum.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}), 
                     StockNum: 0, StockStr: "0,00" 
                 }; 
             } 
@@ -149,7 +146,6 @@ async function cargarInventario() {
     }
 }
 
-function levenshtein(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++){for(let j=1;j<=a.length;j++){if(b.charAt(i-1)===a.charAt(j-1)){m[i][j]=m[i-1][j-1];}else{m[i][j]=Math.min(m[i-1][j-1]+1,Math.min(m[i][j-1]+1,m[i-1][j]+1));}}}return m[b.length][a.length];}
 function quitarAcentos(texto) { return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
 function debounceBusqueda(event) { clearTimeout(debounceTimer); const query = event.target.value.trim(); if(query.length < 2) { cerrarSugerencias(); aplicarFiltros(); return; } debounceTimer = setTimeout(() => mostrarSugerencias(query), 300); }
 
@@ -168,23 +164,53 @@ function compartirProducto(nombre, precio) { if (navigator.share) { navigator.sh
 
 function aplicarFiltros() {
     let q = quitarAcentos(document.getElementById('buscador').value.trim()); let sortOption = document.getElementById('ordenarSelect').value; let verAgotados = document.getElementById('chkAgotados').checked; let resultado = inventario;
-    if (!verAgotados) resultado = resultado.filter(p => p.StockNum > 0); if (categoriaActual === 'Favoritos') resultado = resultado.filter(p => favoritos.includes(p.codigo)); else if (categoriaActual !== 'Todos') resultado = resultado.filter(p => p.Cat === categoriaActual);
-    if (q !== '') { let terms = q.split(' ').filter(t => t.length > 0); resultado = resultado.filter(p => { let nom = quitarAcentos(p.Nombre); let words = nom.split(' '); return terms.every(term => { if (nom.includes(term)) return true; return words.some(w => levenshtein(term, w) <= (term.length > 4 ? 2 : 1)); }); }); }
-    if(sortOption === 'menor') resultado.sort((a,b) => a.PrecioNum - b.PrecioNum); else if(sortOption === 'mayor') resultado.sort((a,b) => b.PrecioNum - a.PrecioNum); else if(sortOption === 'az') resultado.sort((a,b) => a.Nombre.localeCompare(b.Nombre));
-    productosFiltradosGlobal = resultado; paginaActual = 1; document.getElementById('lista-productos').innerHTML = ''; renderizarPagina();
+    
+    if (!verAgotados) resultado = resultado.filter(p => p.StockNum > 0); 
+    if (categoriaActual === 'Favoritos') resultado = resultado.filter(p => favoritos.includes(p.codigo)); 
+    else if (categoriaActual !== 'Todos') resultado = resultado.filter(p => p.Cat === categoriaActual);
+    
+    // CORRECCIÓN DEL BUSCADOR: Ahora la búsqueda es exacta y directa.
+    if (q !== '') { 
+        let terms = q.split(' ').filter(t => t.length > 0); 
+        resultado = resultado.filter(p => { 
+            let nom = quitarAcentos(p.Nombre); 
+            return terms.every(term => nom.includes(term)); 
+        }); 
+    }
+    
+    if(sortOption === 'menor') resultado.sort((a,b) => a.PrecioNum - b.PrecioNum); 
+    else if(sortOption === 'mayor') resultado.sort((a,b) => b.PrecioNum - a.PrecioNum); 
+    else if(sortOption === 'az') resultado.sort((a,b) => a.Nombre.localeCompare(b.Nombre));
+    
+    productosFiltradosGlobal = resultado; 
+    paginaActual = 1; 
+    renderizarPagina();
 }
 
 function codificarNombre(str) { try { return btoa(unescape(encodeURIComponent(str))); } catch(e) { return btoa(str); } }
 function decodificarNombre(b64) { try { return decodeURIComponent(escape(atob(b64))); } catch(e) { return atob(b64); } }
 
 function renderizarPagina() {
-    const cont = document.getElementById('lista-productos'); let inicio = (paginaActual - 1) * itemsPorPagina, fin = paginaActual * itemsPorPagina; let pedazo = productosFiltradosGlobal.slice(inicio, fin);
-    if(productosFiltradosGlobal.length === 0) { cont.innerHTML = `<div style="grid-column: span 2; text-align: center; padding: 40px 20px; color: var(--texto-claro);"><i class="fa-solid fa-wine-bottle" style="font-size: 60px; opacity: 0.3; margin-bottom: 15px;"></i><h3 style="color: var(--texto-oscuro); font-size: 16px; font-weight: bold;">¿Aún no tienes sed?</h3><p style="font-size: 13px; margin-top: 5px;">No encontramos botellas en esta sección.</p><button onclick="irInicio()" class="cat-btn active" style="margin: 20px auto 0 auto; padding: 10px 20px;">Ver todo el catálogo</button></div>`; document.getElementById('btn-cargar-mas').style.display = 'none'; return; }
+    const cont = document.getElementById('lista-productos'); 
+    
+    // CORRECCIÓN DEL BUG CLONADOR: Se obliga a vaciar el lienzo siempre antes de inyectar
+    if (paginaActual === 1) cont.innerHTML = ''; 
+    
+    let inicio = (paginaActual - 1) * itemsPorPagina, fin = paginaActual * itemsPorPagina; 
+    let pedazo = productosFiltradosGlobal.slice(inicio, fin);
+    
+    if(productosFiltradosGlobal.length === 0) { 
+        if(paginaActual === 1) {
+            cont.innerHTML = `<div style="grid-column: span 2; text-align: center; padding: 40px 20px; color: var(--texto-claro);"><i class="fa-solid fa-wine-bottle" style="font-size: 60px; opacity: 0.3; margin-bottom: 15px;"></i><h3 style="color: var(--texto-oscuro); font-size: 16px; font-weight: bold;">¿Aún no tienes sed?</h3><p style="font-size: 13px; margin-top: 5px;">No encontramos botellas en esta sección.</p><button onclick="irInicio()" class="cat-btn active" style="margin: 20px auto 0 auto; padding: 10px 20px;">Ver todo el catálogo</button></div>`; 
+            document.getElementById('btn-cargar-mas').style.display = 'none'; 
+        }
+        return; 
+    }
+    
     const fragmento = document.createDocumentFragment();
     pedazo.forEach(p => {
         const isFav = favoritos.includes(p.codigo); const isAgotado = p.StockNum <= 0; const d = document.createElement('div'); d.className = `producto-card ${isAgotado ? 'agotado' : ''}`; let nombreB64 = codificarNombre(p.Nombre);
         
-        // NUEVO: Variables dinámicas según el interruptor
         let esModoCaja = (modoVistaGlobal === 'caja');
         let precioUsdDin = esModoCaja ? p.PrecioCajaUsd : p.PrecioStr;
         let precioBsDin = esModoCaja ? p.PrecioCajaBsStr : p.PrecioBsStr;
@@ -209,10 +235,13 @@ function renderizarPagina() {
         `;
         fragmento.appendChild(d);
     });
-    cont.appendChild(fragmento); if (fin < productosFiltradosGlobal.length) document.getElementById('btn-cargar-mas').style.display = 'block'; else document.getElementById('btn-cargar-mas').style.display = 'none';
+    cont.appendChild(fragmento); 
+    if (fin < productosFiltradosGlobal.length) document.getElementById('btn-cargar-mas').style.display = 'block'; 
+    else document.getElementById('btn-cargar-mas').style.display = 'none';
 }
 
 function cargarMasProductos() { paginaActual++; renderizarPagina(); }
+
 function generarCategorias() {
     const cont = document.getElementById('contenedorCategorias'); let categorias = [...new Set(inventario.map(p => p.Cat))].sort(); cont.innerHTML = '';
     let btnTodos = document.createElement('button'); btnTodos.className = (categoriaActual === 'Todos') ? "cat-btn active" : "cat-btn"; btnTodos.innerText = "Todos"; btnTodos.onclick = function() { filtrarCategoria('Todos', this); }; cont.appendChild(btnTodos);
