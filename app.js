@@ -49,6 +49,7 @@ async function obtenerArchivosExternos() {
     try { let resRec = await fetch('recomendados.txt?v=' + new Date().getTime()); if (resRec.ok) { let textoRec = await resRec.text(); codigosRecomendados = textoRec.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); } } catch (error) {}
     try { let resDisp = await fetch('disponibles.txt?v=' + new Date().getTime()); if (resDisp.ok) { let textoDisp = await resDisp.text(); siempreDisponibles = textoDisp.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); } } catch (error) {}
     
+    // SISTEMA DE CARRUSEL ANIMADO PARA LOS BANNERS
     try { 
         let resBan = await fetch('banners.txt?v=' + new Date().getTime()); 
         if (resBan.ok) { 
@@ -56,7 +57,26 @@ async function obtenerArchivosExternos() {
             let contBanners = document.getElementById('contenedorBanners');
             if(listaBanners.length > 0 && contBanners) {
                 contBanners.innerHTML = ''; 
-                listaBanners.forEach(img => { contBanners.innerHTML += `<div class="promo-banner"><img src="banners/${img}" alt="Promo" onerror="this.parentElement.style.display='none'"></div>`; });
+                
+                // Le damos formato de carrusel ocultando la barra de scroll
+                contBanners.style.display = 'flex'; 
+                contBanners.style.overflowX = 'hidden'; 
+                contBanners.style.scrollBehavior = 'smooth';
+                
+                listaBanners.forEach(img => { 
+                    contBanners.innerHTML += `<div class="promo-banner" style="min-width: 100%; flex-shrink: 0;"><img src="banners/${img}" alt="Promo" style="width: 100%; border-radius: 12px; display: block;" onerror="this.parentElement.style.display='none'"></div>`; 
+                });
+
+                // Motor que mueve los banners cada 3 segundos
+                let slideIndex = 0;
+                setInterval(() => {
+                    let totalSlides = contBanners.children.length;
+                    if(totalSlides > 1) {
+                        slideIndex++;
+                        if(slideIndex >= totalSlides) slideIndex = 0;
+                        contBanners.scrollTo({ left: contBanners.clientWidth * slideIndex, behavior: 'smooth' });
+                    }
+                }, 3000);
             }
         } 
     } catch (error) { console.log("Sin banners.txt"); }
@@ -150,7 +170,6 @@ function levenshtein(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(le
 function quitarAcentos(texto) { return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
 function debounceBusqueda(event) { clearTimeout(debounceTimer); const query = event.target.value.trim(); if(query.length < 2) { cerrarSugerencias(); aplicarFiltros(); return; } debounceTimer = setTimeout(() => mostrarSugerencias(query), 300); }
 
-// DICCIONARIO CRIOLLO INTELIGENTE
 const diccionarioSinonimos = { 'birra': 'cerveza', 'birras': 'cerveza', 'curda': 'licor', 'cana': 'ron', 'pasapalo': 'snack', 'pasapalos': 'snack', 'soda': 'refresco', 'fresco': 'refresco', 'chuche': 'snack', 'chucheria': 'snack' };
 
 function mostrarSugerencias(q) {
@@ -181,7 +200,6 @@ function filtrarCategoria(cat, btn) { categoriaActual = cat; document.querySelec
 function toggleFav(codigo) { let index = favoritos.indexOf(codigo); if(index === -1) { favoritos.push(codigo); mostrarToast("Agregado a favoritos ❤️"); } else { favoritos.splice(index, 1); } localStorage.setItem('gc_favs', JSON.stringify(favoritos)); aplicarFiltros(); }
 function compartirProducto(nombre, precio) { if (navigator.share) { navigator.share({ title: 'Gran Catador', text: `¡Mira esta bebida! ${nombre} a solo $${precio}.`, url: window.location.href }).catch(e=>console.log(e)); } else { mostrarToast("Copiado al portapapeles."); } }
 
-// FILTRO INTELIGENTE CON IA BÁSICA Y SINÓNIMOS
 function aplicarFiltros() {
     let q = quitarAcentos(document.getElementById('buscador').value.trim()); let sortOption = document.getElementById('ordenarSelect').value; let verAgotados = document.getElementById('chkAgotados').checked; let resultado = inventario;
     
@@ -190,21 +208,13 @@ function aplicarFiltros() {
     else if (categoriaActual !== 'Todos') resultado = resultado.filter(p => p.Cat === categoriaActual);
     
     if (q !== '') { 
-        // Convertimos la búsqueda en términos, y aplicamos el diccionario de sinónimos
         let terms = q.split(' ').filter(t => t.length > 0).map(t => diccionarioSinonimos[t] || t);
-        
         resultado = resultado.filter(p => { 
             let textoCompleto = quitarAcentos(p.Nombre) + " " + quitarAcentos(p.Cat); 
             let words = textoCompleto.split(' ');
-            
             return terms.every(term => { 
-                // 1. Si coincide exacto en nombre o categoría, pasa.
                 if (textoCompleto.includes(term)) return true; 
-                
-                // 2. IA de Autocorrector: Si la palabra tiene más de 4 letras, perdonamos 1 o 2 errores ortográficos.
-                if (term.length >= 4) {
-                    return words.some(w => levenshtein(term, w) <= (term.length >= 6 ? 2 : 1));
-                }
+                if (term.length >= 4) return words.some(w => levenshtein(term, w) <= (term.length >= 6 ? 2 : 1));
                 return false;
             }); 
         }); 
@@ -225,7 +235,7 @@ function decodificarNombre(b64) { try { return decodeURIComponent(escape(atob(b6
 function renderizarPagina() {
     const cont = document.getElementById('lista-productos'); 
     
-    if (paginaActual === 1) cont.innerHTML = ''; // MANTENEMOS EL CANDADO ANTI-CLONACIÓN
+    if (paginaActual === 1) cont.innerHTML = ''; 
     
     let inicio = (paginaActual - 1) * itemsPorPagina, fin = paginaActual * itemsPorPagina; 
     let pedazo = productosFiltradosGlobal.slice(inicio, fin);
