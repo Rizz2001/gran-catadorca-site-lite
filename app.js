@@ -18,8 +18,22 @@ document.head.appendChild(styleT);
 if(localStorage.getItem('gc_dark') === 'true') document.body.classList.add('dark-mode');
 
 let promptInstalacion;
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); promptInstalacion = e; document.getElementById('pwa-banner').style.display = 'block'; });
-function instalarApp() { if(promptInstalacion) { promptInstalacion.prompt(); promptInstalacion.userChoice.then(() => { document.getElementById('pwa-banner').style.display = 'none'; promptInstalacion = null; }); } }
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    promptInstalacion = e;
+    const banner = document.getElementById('pwa-banner');
+    if (banner) banner.classList.add('show');
+});
+function instalarApp() {
+    if (promptInstalacion) {
+        promptInstalacion.prompt();
+        promptInstalacion.userChoice.then(() => {
+            const banner = document.getElementById('pwa-banner');
+            if (banner) banner.classList.remove('show');
+            promptInstalacion = null;
+        });
+    }
+}
 if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => { console.log("PWA Ok"); }).catch(err => console.log("SW Error", err)); }); }
 
 if (localStorage.getItem('ageVerified') === 'true') { let ag = document.getElementById('age-gate'); if(ag) ag.style.display = 'none'; }

@@ -68,7 +68,6 @@
         .search-container input { background: transparent; border: none; outline: none; width: 100%; margin-left: 10px; font-size: 14px; color: var(--texto-oscuro); font-weight: 500; }
         #search-suggestions { position: absolute; top: 55px; left: 0; width: 100%; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none; overflow: hidden; z-index: 1000; max-height: 250px; overflow-y: auto; }
         body.dark-mode #search-suggestions { background: #1f2937; border: 1px solid rgba(255,255,255,0.08); }
-        #pwa-banner { display: none; }
         .suggestion-item { padding: 12px 15px; border-bottom: 1px solid var(--borde-color); font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; }
         .suggestion-item img { height: 30px; width: 30px; object-fit: contain; }
 
@@ -140,6 +139,42 @@
 
         #toast-container { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); z-index: 3000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
         .toast { background: rgba(37, 211, 102, 0.95); color: white; padding: 10px 20px; border-radius: 30px; font-size: 12px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .install-banner {
+            display: none;
+            position: fixed;
+            bottom: 22px;
+            right: 22px;
+            z-index: 9999;
+            background: linear-gradient(135deg, #f5a700, #f7c948);
+            color: #0b132b;
+            padding: 14px 18px;
+            border-radius: 999px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.22);
+            font-weight: 800;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            opacity: 0;
+        }
+        .install-banner.show {
+            display: flex;
+            opacity: 1;
+        }
+        .install-banner:hover {
+            transform: translateY(-3px);
+        }
+        @media (max-width: 767px) {
+            .install-banner {
+                right: 16px;
+                left: 16px;
+                bottom: 20px;
+                justify-content: center;
+                font-size: 13px;
+            }
+        }
 
         /* --- OPTIMIZACIÓN EXCLUSIVA PARA PC DE ESCRITORIO --- */
         @media (min-width: 768px) {
