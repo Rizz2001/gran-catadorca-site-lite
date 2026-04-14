@@ -57,8 +57,52 @@ function checkHorario() {
 }
 checkHorario(); setInterval(checkHorario, 60000);
 
+async function obtenerTasaDolar() {
+    try {
+        const response = await fetch('https://ve.dolarapi.com/v1/dolares');
+        if (response.ok) {
+            const data = await response.json();
+            if (data && Array.isArray(data) && data.length > 0) {
+                // Usar la tasa promedio o la oficial
+                const tasaPromedio = data[0].promedio || data[0].precio || 36.25;
+                tasaOficial = parseFloat(tasaPromedio);
+                console.log(`💵 Tasa actualizada vía API: ${tasaOficial.toFixed(2)} Bs`);
+                // Guardar en localStorage para persistencia
+                localStorage.setItem('tasaDolar', tasaOficial.toString());
+                localStorage.setItem('tasaDolarTime', new Date().getTime().toString());
+                return true;
+            }
+        }
+    } catch (error) { 
+        console.log("⚠️ Error obteniendo tasa de dolarapi:", error.message);
+        // Intentar usando tasa.txt como fallback
+        try {
+            let resTasa = await fetch('tasa.txt?v=' + new Date().getTime());
+            if (resTasa.ok) {
+                let texto = await resTasa.text();
+                tasaOficial = parseFloat(texto.trim().replace(',', '.'));
+                console.log(`📄 Tasa cargada desde archivo local: ${tasaOficial.toFixed(2)} Bs`);
+                localStorage.setItem('tasaDolar', tasaOficial.toString());
+                localStorage.setItem('tasaDolarTime', new Date().getTime().toString());
+                return true;
+            }
+        } catch (fallbackError) {
+            console.log("⚠️ Error cargando tasa local:", fallbackError.message);
+            // Si hay tasa guardada en localStorage, usarla
+            const tasaGuardada = localStorage.getItem('tasaDolar');
+            if (tasaGuardada) {
+                tasaOficial = parseFloat(tasaGuardada);
+                console.log(`💾 Usando tasa en caché: ${tasaOficial.toFixed(2)} Bs`);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 async function obtenerArchivosExternos() {
-    try { let resTasa = await fetch('tasa.txt?v=' + new Date().getTime()); if (resTasa.ok) { let texto = await resTasa.text(); tasaOficial = parseFloat(texto.trim().replace(',', '.')); } } catch (error) { console.log("Tasa no encontrada"); }
+    // Obtener tasa de dólares
+    await obtenerTasaDolar();
     let tasaEl = document.getElementById('tasaValor'); if(tasaEl) tasaEl.innerText = tasaOficial.toFixed(2) + " Bs";
     
     try { let resRec = await fetch('recomendados.txt?v=' + new Date().getTime()); if (resRec.ok) { let textoRec = await resRec.text(); codigosRecomendados = textoRec.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); } } catch (error) {}
