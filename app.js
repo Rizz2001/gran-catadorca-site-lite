@@ -48,11 +48,32 @@ function verificarEdad() {
 
 function checkHorario() {
     try {
-        let d = new Date(); let formatter = new Intl.DateTimeFormat('es-VE', { hour: 'numeric', hour12: false, timeZone: 'America/Caracas' }); let horaCaracas = parseInt(formatter.format(d));
-        let badge = document.getElementById('store-status'), btnWs = document.getElementById('btn-whatsapp'), msgCerrado = document.getElementById('msg-cerrado');
-        if(!badge) return;
-        if(horaCaracas >= 8 && horaCaracas < 21) { isTiendaAbierta = true; badge.innerHTML = "🟢 ABIERTO"; badge.style.background = "rgba(37, 211, 102, 0.2)"; badge.style.color = "#25D366"; badge.style.borderColor = "rgba(37, 211, 102, 0.4)"; if(btnWs) btnWs.classList.remove('disabled'); if(msgCerrado) msgCerrado.style.display = "none"; } 
-        else { isTiendaAbierta = false; badge.innerHTML = "🔴 CERRADO"; badge.style.background = "rgba(234, 67, 53, 0.2)"; badge.style.color = "#ea4335"; badge.style.borderColor = "rgba(234, 67, 53, 0.4)"; if(btnWs) btnWs.classList.add('disabled'); if(msgCerrado) msgCerrado.style.display = "block"; }
+        let d = new Date();
+        let formatter = new Intl.DateTimeFormat('es-VE', { hour: 'numeric', hour12: false, timeZone: 'America/Caracas' });
+        let horaCaracas = parseInt(formatter.format(d));
+        let badge = document.getElementById('store-status');
+        let btnWs = document.getElementById('btn-whatsapp');
+        let msgCerrado = document.getElementById('msg-cerrado');
+        
+        if (!badge) return;
+        
+        if (horaCaracas >= 8 && horaCaracas < 21) {
+            isTiendaAbierta = true;
+            badge.innerHTML = "🟢 ABIERTO";
+            badge.style.background = "rgba(37, 211, 102, 0.2)";
+            badge.style.color = "#25D366";
+            badge.style.borderColor = "rgba(37, 211, 102, 0.4)";
+            if (btnWs) btnWs.classList.remove('disabled');
+            if (msgCerrado) msgCerrado.style.display = "none";
+        } else {
+            isTiendaAbierta = false;
+            badge.innerHTML = "🔴 CERRADO";
+            badge.style.background = "rgba(234, 67, 53, 0.2)";
+            badge.style.color = "#ea4335";
+            badge.style.borderColor = "rgba(234, 67, 53, 0.4)";
+            if (btnWs) btnWs.classList.add('disabled');
+            if (msgCerrado) msgCerrado.style.display = "block";
+        }
     } catch(e) { console.log("Error en horario"); }
 }
 checkHorario(); setInterval(checkHorario, 60000);
