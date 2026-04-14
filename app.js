@@ -236,7 +236,7 @@ async function cargarInventario() {
 }
 
 function levenshtein(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++){for(let j=1;j<=a.length;j++){if(b.charAt(i-1)===a.charAt(j-1)){m[i][j]=m[i-1][j-1];}else{m[i][j]=Math.min(m[i-1][j-1]+1,Math.min(m[i][j-1]+1,m[i-1][j]+1));}}}return m[b.length][a.length];}
-function debounceBusqueda(event) { clearTimeout(debounceTimer); const query = event.target.value.trim(); if(query.length < 2) { cerrarSugerencias(); aplicarFiltros(); return; } debounceTimer = setTimeout(() => mostrarSugerencias(query), 300); }
+function debounceBusqueda(event) { clearTimeout(debounceTimer); const query = event.target.value.trim(); if(query.length < 2) { cerrarSugerencias(); aplicarFiltros(); return; } debounceTimer = setTimeout(() => { aplicarFiltros(); mostrarSugerencias(query); }, 300); }
 
 const diccionarioSinonimos = { 'birra': 'cerveza', 'birras': 'cerveza', 'curda': 'licor', 'cana': 'ron', 'pasapalo': 'snack', 'pasapalos': 'snack', 'soda': 'refresco', 'fresco': 'refresco', 'chuche': 'snack', 'chucheria': 'snack' };
 
@@ -256,9 +256,11 @@ function mostrarSugerencias(q) {
     }).slice(0, 5);
     
     const cont = document.getElementById('search-suggestions');
-    if(coincidencias.length === 0) { cerrarSugerencias(); aplicarFiltros(); return; } cont.innerHTML = '';
+    if(coincidencias.length === 0) { cerrarSugerencias(); aplicarFiltros(); return; }
+    cont.innerHTML = '';
     coincidencias.forEach(p => { const div = document.createElement('div'); div.className = 'suggestion-item'; div.innerHTML = `<img src="img/${p.codigo}.webp" onerror="imgFallback(this, '${p.codigo}')"><span>${p.Nombre}</span>`; div.onclick = () => { document.getElementById('buscador').value = p.Nombre; cerrarSugerencias(); aplicarFiltros(); }; cont.appendChild(div); });
     cont.style.display = 'block';
+    aplicarFiltros();
 }
 
 function cerrarSugerencias() { document.getElementById('search-suggestions').style.display = 'none'; }
