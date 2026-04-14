@@ -25,8 +25,11 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navi
 if (localStorage.getItem('ageVerified') === 'true') { let ag = document.getElementById('age-gate'); if(ag) ag.style.display = 'none'; }
 function verificarEdad() {
     let d = document.getElementById('age-d').value, m = document.getElementById('age-m').value, y = document.getElementById('age-y').value, err = document.getElementById('age-error');
-    if(!d || !m || !y || d>31 || m>12 || y<1900) { err.innerText = "Ingresa una fecha válida."; err.style.display = "block"; return; }
-    let birth = new Date(y, m - 1, d), today = new Date(); let age = today.getFullYear() - birth.getFullYear(), mDiff = today.getMonth() - birth.getMonth();
+    let dia = Number(d), mes = Number(m), ano = Number(y);
+    if(!dia || !mes || !ano || dia > 31 || mes > 12 || ano < 1900) { err.innerText = "Ingresa una fecha válida."; err.style.display = "block"; return; }
+    let birth = new Date(ano, mes - 1, dia);
+    if (birth.getFullYear() !== ano || birth.getMonth() !== mes - 1 || birth.getDate() !== dia) { err.innerText = "Ingresa una fecha válida."; err.style.display = "block"; return; }
+    let today = new Date(); let age = today.getFullYear() - birth.getFullYear(), mDiff = today.getMonth() - birth.getMonth();
     if (mDiff < 0 || (mDiff === 0 && today.getDate() < birth.getDate())) age--;
     if(age >= 18) { localStorage.setItem('ageVerified', 'true'); document.getElementById('age-gate').style.display = 'none'; } else { err.innerText = "Lo sentimos, debes ser mayor de 18 años."; err.style.display = "block"; }
 }
@@ -87,6 +90,7 @@ function imgFallback(imgElement, codigoProducto) {
 const fetchCSV = (u) => new Promise((resolve, reject) => { Papa.parse(u, { download: true, encoding: "latin-1", complete: (r) => resolve(r.data), error: (err) => reject(err) }) });
 function limpiarCategoria(texto) { if(!texto) return "Otros"; return texto.trim().replace(/\s+/g, ' ').toUpperCase(); }
 function quitarAcentos(texto) { return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+function parseNumber(texto) { if (texto == null) return 0; let str = texto.toString().trim().replace(/\./g, '').replace(',', '.'); let num = parseFloat(str); return Number.isFinite(num) ? num : 0; }
 
 function cambiarModoVista(modo) {
     modoVistaGlobal = modo;
@@ -193,7 +197,29 @@ async function cargarInventario() {
         });
         
         // 3. CARGAR EXISTENCIAS
-        sRaw.forEach(r => { let i = r.indexOf("Existencia"); if (i !== -1 && r.length > i + 8) { let cod = r[i+2]?.trim(); if (mapa[cod]) { mapa[cod].StockStr = r[i+8]?.trim(); mapa[cod].StockNum = parseFloat(mapa[cod].StockStr.replace('.','').replace(',','.')); } } });
+        sRaw.forEach(r => {
+            let cod = r.find(cell => typeof cell === 'string' && /^\s*'?\d{6,}'?\s*$/.test(cell) && cell.trim().length > 0);
+            if (!cod) return;
+            cod = cod.trim().replace(/^'+|'+$/g, '');
+            if (!mapa[cod]) return;
+
+            let stock = '';
+            let codeIndex = r.findIndex(cell => typeof cell === 'string' && cell.trim().replace(/^'+|'+$/g, '') === cod);
+            if (codeIndex !== -1 && codeIndex + 4 < r.length && /^[\d\-\.,]+$/.test((r[codeIndex + 4] || '').trim())) {
+                stock = r[codeIndex + 4].trim();
+            }
+            if (!stock && codeIndex !== -1 && codeIndex + 6 < r.length && /^[\d\-\.,]+$/.test((r[codeIndex + 6] || '').trim())) {
+                stock = r[codeIndex + 6].trim();
+            }
+            if (!stock) {
+                const candidate = r.slice(codeIndex + 2).find(cell => typeof cell === 'string' && /^[\d\-\.,]+$/.test(cell.trim()));
+                if (candidate) stock = candidate.trim();
+            }
+            if (stock) {
+                mapa[cod].StockStr = stock;
+                mapa[cod].StockNum = parseNumber(stock);
+            }
+        });
         
         Object.values(mapa).forEach(prod => { if (siempreDisponibles.includes(prod.codigo)) { prod.StockNum = 999; prod.StockStr = "Disponible"; } });
         inventario = Object.values(mapa).filter(p => p.Nombre);
@@ -238,9 +264,34 @@ function mostrarSugerencias(q) {
 function cerrarSugerencias() { document.getElementById('search-suggestions').style.display = 'none'; }
 document.addEventListener('click', (e) => { if(!e.target.closest('.search-container')) cerrarSugerencias(); });
 
-function filtrarCategoria(cat, btn) { categoriaActual = cat; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); aplicarFiltros(); }
+function filtrarCategoria(cat, btn) { categoriaActual = cat; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); aplicarFiltros(); closeCategorias(); }
+function toggleCategorias() { const panel = document.getElementById('categoria-panel'); const overlay = document.getElementById('categoria-overlay'); if(!panel || !overlay) return; const isOpen = panel.classList.toggle('open'); overlay.style.display = isOpen ? 'block' : 'none'; }
+function closeCategorias() { const panel = document.getElementById('categoria-panel'); const overlay = document.getElementById('categoria-overlay'); if(panel) panel.classList.remove('open'); if(overlay) overlay.style.display = 'none'; }
 function toggleFav(codigo) { let index = favoritos.indexOf(codigo); if(index === -1) { favoritos.push(codigo); mostrarToast("Agregado a favoritos ❤️"); } else { favoritos.splice(index, 1); } localStorage.setItem('gc_favs', JSON.stringify(favoritos)); aplicarFiltros(); }
-function compartirProducto(nombre, precio) { if (navigator.share) { navigator.share({ title: 'Gran Catador', text: `¡Mira esta bebida! ${nombre} a solo $${precio}.`, url: window.location.href }).catch(e=>console.log(e)); } else { mostrarToast("Copiado al portapapeles."); } }
+function compartirProducto(nombre, precio) {
+    const text = `¡Mira esta bebida! ${nombre} a solo $${precio}. ${window.location.href}`;
+    if (navigator.share) {
+        navigator.share({ title: 'Gran Catador', text, url: window.location.href }).catch(e => console.log(e));
+        return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => mostrarToast("Texto copiado al portapapeles."), () => fallbackCopyText(text));
+        return;
+    }
+    fallbackCopyText(text);
+}
+
+function fallbackCopyText(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try { document.execCommand('copy'); mostrarToast("Texto copiado al portapapeles."); } catch (e) { mostrarToast("No se pudo copiar al portapapeles."); }
+    document.body.removeChild(textarea);
+}
 
 function aplicarFiltros() {
     let q = quitarAcentos(document.getElementById('buscador').value.trim()); let sortOption = document.getElementById('ordenarSelect').value; let verAgotados = document.getElementById('chkAgotados').checked; let resultado = inventario;

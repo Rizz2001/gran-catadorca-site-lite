@@ -17,6 +17,7 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="responsive.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     
@@ -67,6 +68,7 @@
         .search-container input { background: transparent; border: none; outline: none; width: 100%; margin-left: 10px; font-size: 14px; color: var(--texto-oscuro); font-weight: 500; }
         #search-suggestions { position: absolute; top: 55px; left: 0; width: 100%; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none; overflow: hidden; z-index: 1000; max-height: 250px; overflow-y: auto; }
         body.dark-mode #search-suggestions { background: #1f2937; border: 1px solid rgba(255,255,255,0.08); }
+        #pwa-banner { display: none; }
         .suggestion-item { padding: 12px 15px; border-bottom: 1px solid var(--borde-color); font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; }
         .suggestion-item img { height: 30px; width: 30px; object-fit: contain; }
 
@@ -193,10 +195,15 @@
     </div>
 
     <div class="tools-container">
-        <div class="search-container">
-            <i class="fa-solid fa-magnifying-glass" style="color: var(--texto-claro);"></i>
-            <input type="text" id="buscador" placeholder="Buscar productos..." onkeyup="debounceBusqueda(event)">
-            <div id="search-suggestions"></div>
+        <div class="tools-top-row">
+            <button id="btn-categorias-toggle" class="hamburger-menu" onclick="toggleCategorias()">
+                <i class="fa-solid fa-bars"></i> Categorías
+            </button>
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass" style="color: var(--texto-claro);"></i>
+                <input type="text" id="buscador" placeholder="Buscar productos..." onkeyup="debounceBusqueda(event)">
+                <div id="search-suggestions"></div>
+            </div>
         </div>
         <div class="filtro-secundario">
             <label class="chk-agotados"><input type="checkbox" id="chkAgotados" onchange="aplicarFiltros()"> Ver Agotados</label>
@@ -209,7 +216,14 @@
         </div>
     </div>
 
-    <div class="categorias-scroll" id="contenedorCategorias"></div>
+    <div class="categoria-panel" id="categoria-panel">
+        <div class="categoria-panel-header">
+            <span>Categorías</span>
+            <button class="close-categories" onclick="closeCategorias()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="categorias-scroll" id="contenedorCategorias"></div>
+    </div>
+    <div class="categoria-overlay" id="categoria-overlay" onclick="closeCategorias()"></div>
 
     <div class="productos-grid" id="lista-productos">
         <p style="grid-column: span 2; text-align: center; color: var(--texto-claro); font-size: 13px; margin-top: 20px;">Cargando inventario...</p>
