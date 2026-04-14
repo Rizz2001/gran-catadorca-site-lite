@@ -10,6 +10,9 @@ let subcategoriasLicores = {};
 let mapaCodToSubcategoria = {};
 let subcategoriaActual = null;
 
+// Categorías que son subcategorías de LICORES
+const categoriasLicores = ['LICORES', 'CERVEZA', 'REFRESCOS', 'JUGO Y LACTEAS', 'AGUA'];
+
 if(localStorage.getItem('gc_dark') === 'true') document.body.classList.add('dark-mode');
 
 let promptInstalacion;
@@ -327,7 +330,7 @@ function filtrarCategoria(cat, btn) {
     
     // Generar subcategorías si es LICORES
     if (cat === 'LICORES') { 
-        console.log("📦 Generando subcategorías para LICORES. Total:", Object.keys(subcategoriasLicores).length);
+        console.log("🍺 Generando subcategorías para LICORES. Categorías disponibles:", categoriasLicores.join(', '));
         generarSubcategoriasLicores(); 
     }
     
@@ -372,16 +375,20 @@ function aplicarFiltros() {
     
     if (categoriaActual === 'Favoritos') {
         resultado = resultado.filter(p => favoritos.includes(p.codigo)); 
+    } else if (categoriaActual === 'LICORES') {
+        // LICORES agrupa múltiples categorías
+        resultado = resultado.filter(p => categoriasLicores.includes(p.Cat));
+        console.log(`🔍 Filtro LICORES (incluye ${categoriasLicores.join(', ')}): ${resultado.length} productos`);
     } else if (categoriaActual !== 'Todos') {
         resultado = resultado.filter(p => p.Cat === categoriaActual);
-        console.log(`🔍 Después filtro ${categoriaActual}: ${resultado.length} productos`);
+        console.log(`🔍 Filtro ${categoriaActual}: ${resultado.length} productos`);
     }
     
-    // Filtrar por subcategoría si está activa
+    // Filtrar POR SUBCATEGORÍA si está activa (cuando está dentro de LICORES)
     if (subcategoriaActual && categoriaActual === 'LICORES') {
-        const codigosSubcat = subcategoriasLicores[subcategoriaActual] || [];
+        // La subcategoría mapea a una categoría real
         const antes = resultado.length;
-        resultado = resultado.filter(p => codigosSubcat.includes(p.codigo));
+        resultado = resultado.filter(p => p.Cat === subcategoriaActual);
         console.log(`📦 Filtro subcategoría ${subcategoriaActual}: ${antes} → ${resultado.length} productos`);
     }
     
@@ -389,7 +396,7 @@ function aplicarFiltros() {
         let terms = q.split(' ').filter(t => t.length > 0).map(t => diccionarioSinonimos[t] || t);
         resultado = resultado.filter(p => { 
             let textoCompleto = p.TextoBusquedaLimpio;
-            let subcatTexto = mapaCodToSubcategoria[p.codigo] || '';
+            let subcatTexto = p.Cat || '';  // Usar la categoría real
             let textoConSubcat = textoCompleto + ' ' + quitarAcentos(subcatTexto);
             let words = textoConSubcat.split(' ');
             return terms.every(term => { 
@@ -484,8 +491,18 @@ function generarCategorias() {
     btnFav.onclick = function() { filtrarCategoria('Favoritos', this); }; 
     cont.appendChild(btnFav);
     
-    // Categorías principales
-    categorias.forEach(c => { 
+    // Botón LICORES (agrupa todas las bebidas alcohólicas y refrescos)
+    let btnLicores = document.createElement('button');
+    btnLicores.className = (categoriaActual === 'LICORES') ? "cat-btn active" : "cat-btn";
+    btnLicores.innerHTML = "🍸 LICORES";
+    btnLicores.onclick = function() { filtrarCategoria('LICORES', this); };
+    cont.appendChild(btnLicores);
+    
+    // Resto de categorías (excepto las que están dentro de LICORES)
+    categorias.forEach(c => {
+        // NO mostrar categorías que están dentro de LICORES
+        if(categoriasLicores.includes(c)) return;
+        
         let b = document.createElement('button'); 
         b.className = (c === categoriaActual) ? "cat-btn active" : "cat-btn"; 
         b.innerText = c; 
@@ -497,7 +514,8 @@ function generarCategorias() {
     if (categoriaActual === 'LICORES') { 
         generarSubcategoriasLicores(); 
     } else {
-        document.getElementById('subcategoria-section-main').style.display = 'none';
+        let subcatSection = document.getElementById('subcategoria-section-main');
+        if(subcatSection) subcatSection.style.display = 'none';
     }
     
     setTimeout(() => { let activeBtn = cont.querySelector('.active'); if(activeBtn) activeBtn.scrollIntoView({behavior: "smooth", inline: "center", block: "nearest"}); }, 150);
@@ -516,8 +534,16 @@ function generarSubcategoriasLicores() {
         return;
     }
     
-    if (Object.keys(subcategoriasLicores).length === 0) {
-        console.warn("⚠️ subcategoriasLicores está vacío. No se cargaron subcategorías");
+    // Obtener categorías reales disponibles dentro de LICORES
+    const categoriasDisponibles = new Set();
+    inventario.forEach(p => {
+        if(categoriasLicores.includes(p.Cat)) {
+            categoriasDisponibles.add(p.Cat);
+        }
+    });
+    
+    if (categoriasDisponibles.size === 0) {
+        console.warn("⚠️ No hay categorías disponibles dentro de LICORES");
         subcatSection.style.display = 'none';
         return;
     }
@@ -532,16 +558,22 @@ function generarSubcategoriasLicores() {
     btnLimpiar.onclick = function() { subcategoriaActual = null; aplicarFiltros(); };
     subcatContainer.appendChild(btnLimpiar);
     
-    // Botones para cada subcategoría
-    Object.keys(subcategoriasLicores).sort().forEach(subcat => {
+    // Botones para cada categoría dentro de LICORES
+    Array.from(categoriasDisponibles).sort().forEach(categoria => {
         let btn = document.createElement('button');
-        btn.className = (subcat === subcategoriaActual) ? "cat-btn active" : "cat-btn";
-        btn.innerText = subcat;
-        btn.onclick = function() { subcategoriaActual = subcat; aplicarFiltros(); };
+        btn.className = (categoria === subcategoriaActual) ? "cat-btn active" : "cat-btn";
+        // Mapear nombre bonito
+        let displayName = categoria;
+        if(categoria === 'JUGO Y LACTEAS') displayName = '🥛 JUGO & LÁCTEAS';
+        else if(categoria === 'CERVEZA') displayName = '🍺 CERVEZA';
+        else if(categoria === 'REFRESCOS') displayName = '🥤 REFRESCOS';
+        else if(categoria === 'AGUA') displayName = '💧 AGUA';
+        btn.innerText = displayName;
+        btn.onclick = function() { subcategoriaActual = categoria; aplicarFiltros(); };
         subcatContainer.appendChild(btn);
     });
     
-    console.log("✓ Generadas subcategorías LICORES:", Object.keys(subcategoriasLicores).length);
+    console.log("✓ Generadas subcategorías LICORES:", Array.from(categoriasDisponibles).sort());
 }
 
 function setActiveNav(id) { document.querySelectorAll('.bottom-nav a').forEach(a => a.classList.remove('active')); const el = document.getElementById(id); if(el) el.classList.add('active'); }
