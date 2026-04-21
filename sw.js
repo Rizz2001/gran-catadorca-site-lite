@@ -1,8 +1,8 @@
-const CACHE_NAME = 'grancatador-v8'; // Subimos la versión para limpiar la basura vieja
+const CACHE_NAME = 'grancatador-v9'; // Actualizado por reestructuración
 const urlsToCache = [
   './',
   './index.html',
-  './app.js',
+  './js/app.js',
   './logo.png',
   './manifest.json',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap',
