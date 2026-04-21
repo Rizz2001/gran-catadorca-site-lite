@@ -1,0 +1,178 @@
+/**
+ * ui.js - Manejo de la Interfaz de Usuario (DOM) y Eventos Visuales
+ */
+
+// --- VERIFICACIÓN DE EDAD Y HORARIO ---
+if (localStorage.getItem('ageVerified') === 'true') { let ag = document.getElementById('age-gate'); if(ag) ag.style.display = 'none'; }
+function verificarEdad() {
+    let d = document.getElementById('age-d').value, m = document.getElementById('age-m').value, y = document.getElementById('age-y').value, err = document.getElementById('age-error');
+    let dia = Number(d), mes = Number(m), ano = Number(y);
+    if(!dia || !mes || !ano || dia > 31 || mes > 12 || ano < 1900) { err.innerText = "Ingresa una fecha válida."; err.style.display = "block"; return; }
+    let birth = new Date(ano, mes - 1, dia);
+    if (birth.getFullYear() !== ano || birth.getMonth() !== mes - 1 || birth.getDate() !== dia) { err.innerText = "Ingresa una fecha válida."; err.style.display = "block"; return; }
+    let today = new Date(); let age = today.getFullYear() - birth.getFullYear(), mDiff = today.getMonth() - birth.getMonth();
+    if (mDiff < 0 || (mDiff === 0 && today.getDate() < birth.getDate())) age--;
+    if(age >= 18) { localStorage.setItem('ageVerified', 'true'); document.getElementById('age-gate').style.display = 'none'; } else { err.innerText = "Lo sentimos, debes ser mayor de 18 años."; err.style.display = "block"; }
+}
+
+function checkHorario() {
+    try {
+        let d = new Date();
+        let formatter = new Intl.DateTimeFormat('es-VE', { hour: 'numeric', hour12: false, timeZone: 'America/Caracas' });
+        let horaCaracas = parseInt(formatter.format(d));
+        let badge = document.getElementById('store-status');
+        let btnWs = document.getElementById('btn-whatsapp');
+        let msgCerrado = document.getElementById('msg-cerrado');
+        
+        if (!badge) return;
+        
+        if (horaCaracas >= 8 && horaCaracas < 21) {
+            isTiendaAbierta = true;
+            badge.innerHTML = "🟢 ABIERTO";
+            badge.style.background = "rgba(37, 211, 102, 0.2)";
+            badge.style.color = "#25D366";
+            badge.style.borderColor = "rgba(37, 211, 102, 0.4)";
+            if (btnWs) btnWs.classList.remove('disabled');
+            if (msgCerrado) msgCerrado.style.display = "none";
+        } else {
+            isTiendaAbierta = false;
+            badge.innerHTML = "🔴 CERRADO";
+            badge.style.background = "rgba(234, 67, 53, 0.2)";
+            badge.style.color = "#ea4335";
+            badge.style.borderColor = "rgba(234, 67, 53, 0.4)";
+            if (btnWs) btnWs.classList.add('disabled');
+            if (msgCerrado) msgCerrado.style.display = "block";
+        }
+    } catch(e) { console.log("Error en horario"); }
+}
+checkHorario(); setInterval(checkHorario, 60000);
+
+// --- NAVEGACIÓN Y MODALES ---
+function setActiveNav(id) { document.querySelectorAll('.bottom-nav a').forEach(a => a.classList.remove('active')); const el = document.getElementById(id); if(el) el.classList.add('active'); }
+function irInicio() { cerrarModal('all'); setActiveNav('nav-home'); window.scrollTo({top: 0, behavior: 'smooth'}); document.getElementById('buscador').value = ''; document.getElementById('chkAgotados').checked = false; cerrarSugerencias(); subcategoriaActual = null; let subcatSection = document.getElementById('subcategoria-section-main'); if(subcatSection) subcatSection.style.display = 'none'; let btnInicio = Array.from(document.querySelectorAll('.cat-btn')).find(b => b.innerText.includes('Inicio')); if(btnInicio) filtrarCategoria('Todos', btnInicio); else filtrarCategoria('Todos', document.querySelectorAll('.cat-btn')[0]); }
+function abrirLegales() { document.getElementById('modal-legales').style.display = 'flex'; }
+function abrirSoporteWhatsApp() { let msg = "Hola, necesito ayuda con la plataforma de Gran Catador."; window.open(`https://wa.me/584245496366?text=${encodeURIComponent(msg)}`, '_blank'); }
+function abrirPerfil() { cerrarModal('all'); setActiveNav('nav-user'); document.getElementById('modal-perfil').style.display = 'flex'; document.getElementById('perfilNombre').value = localStorage.getItem('gc_nombre') || ''; document.getElementById('perfilDireccion').value = localStorage.getItem('gc_direccion') || ''; let hist = JSON.parse(localStorage.getItem('gc_historial')) || []; let listCont = document.getElementById('historial-lista'); if(hist.length === 0) { listCont.innerHTML = '<p style="font-size:12px; color:gray; text-align:center;">Aún no tienes pedidos registrados.</p>'; } else { listCont.innerHTML = ''; hist.forEach((ped, index) => { let itemsT = ped.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', '); listCont.innerHTML += `<div style="border:1px solid var(--borde-color); padding:10px; border-radius:12px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span style="font-size:11px; font-weight:bold; color:var(--dorado);">${ped.fecha}</span><span style="font-size:13px; font-weight:bold;">$${ped.total.toFixed(2)}</span></div><p style="font-size:11px; color:var(--texto-claro); margin-bottom:10px;">${itemsT}</p><button onclick="repetirPedido(${index})" style="background:var(--azul-rey); color:white; border:none; padding:8px; width:100%; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-rotate-right"></i> Repetir este pedido</button></div>`; }); } }
+function guardarPerfil() { localStorage.setItem('gc_nombre', document.getElementById('perfilNombre').value); localStorage.setItem('gc_direccion', document.getElementById('perfilDireccion').value); mostrarToast("Datos guardados ✅"); cerrarModal('modal-perfil', 'nav-home'); }
+function abrirAjustes() { cerrarModal('all'); setActiveNav('nav-settings'); document.getElementById('modal-ajustes').style.display = 'flex'; document.getElementById('toggleDarkMode').checked = document.body.classList.contains('dark-mode'); }
+function toggleDark() { document.body.classList.toggle('dark-mode'); localStorage.setItem('gc_dark', document.body.classList.contains('dark-mode')); }
+function cerrarModal(modalId, navAnterior = 'nav-home') { if(modalId === 'all') { document.querySelectorAll('.modal-fullscreen').forEach(m => m.style.display = 'none'); return; } const m = document.getElementById(modalId); if(m) m.style.display = 'none'; if(navAnterior === 'modal-ajustes') { abrirAjustes(); } else { setActiveNav(navAnterior); } }
+function mostrarToast(msg) { const cont = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = msg; cont.appendChild(t); setTimeout(() => t.remove(), 2500); }
+
+// --- VISTAS Y CATEGORÍAS ---
+function cambiarModoVista(modo) { modoVistaGlobal = modo; document.getElementById('btn-modo-unidad').classList.remove('active'); document.getElementById('btn-modo-caja').classList.remove('active'); document.getElementById('btn-modo-' + modo).classList.add('active'); aplicarFiltros(); }
+function inyectarInterruptor() { let cont = document.querySelector('.tools-container'); if(cont && !document.getElementById('toggle-modo-global')) { let div = document.createElement('div'); div.id = 'toggle-modo-global'; div.className = 'toggle-modo-container'; div.innerHTML = `<div class="btn-modo active" id="btn-modo-unidad" onclick="cambiarModoVista('unidad')">🍾 Por Unidad</div><div class="btn-modo" id="btn-modo-caja" onclick="cambiarModoVista('caja')">📦 Por Caja</div>`; cont.insertBefore(div, cont.children[1]); } }
+
+function generarCategorias() {
+    const cont = document.getElementById('contenedorCategorias'); let categorias = [...new Set(inventario.map(p => p.Cat))].sort(); cont.innerHTML = '';
+    let btnInicio = document.createElement('button'); btnInicio.className = (categoriaActual === 'Todos') ? "cat-btn active" : "cat-btn"; btnInicio.innerHTML = "🏠 Inicio"; btnInicio.onclick = function() { irInicio(); }; cont.appendChild(btnInicio);
+    let btnFav = document.createElement('button'); btnFav.className = (categoriaActual === 'Favoritos') ? "cat-btn active" : "cat-btn"; btnFav.innerHTML = "❤️ Mis Favoritos"; btnFav.style.borderColor = "#ff4757"; btnFav.style.color = "#ff4757"; btnFav.onclick = function() { filtrarCategoria('Favoritos', this); }; cont.appendChild(btnFav);
+    categorias.forEach(c => { let b = document.createElement('button'); b.className = (c === categoriaActual) ? "cat-btn active" : "cat-btn"; b.innerText = (c === 'LICORES') ? "🍸 LICORES" : c; b.onclick = function() { filtrarCategoria(c, this); }; cont.appendChild(b); });
+    if (categoriaActual === 'LICORES') { generarSubcategoriasLicores(); } else { let subcatSection = document.getElementById('subcategoria-section-main'); if(subcatSection) subcatSection.style.display = 'none'; }
+    setTimeout(() => { let activeBtn = cont.querySelector('.active'); if(activeBtn) activeBtn.scrollIntoView({behavior: "smooth", inline: "center", block: "nearest"}); }, 150);
+}
+
+function generarSubcategoriasLicores() {
+    let subcatSection = document.getElementById('subcategoria-section-main'), subcatContainer = document.getElementById('contenedorSubcategorias');
+    if (!subcatSection || !subcatContainer) return;
+    const subcategoriasDisponibles = new Set(); inventario.forEach(p => { if(p.Cat === 'LICORES' && p.SubCat) { subcategoriasDisponibles.add(p.SubCat); } });
+    if (subcategoriasDisponibles.size === 0) { subcatSection.style.display = 'none'; return; }
+    subcatSection.style.display = 'block'; subcatContainer.innerHTML = '';
+    const coloresSubcat = ['#d35400', '#8e44ad', '#2980b9', '#16a085', '#c0392b', '#27ae60', '#f39c12', '#34495e', '#e67e22']; let colorIndex = 0;
+    let btnLimpiar = document.createElement('button'); btnLimpiar.className = (!subcategoriaActual) ? "cat-btn active" : "cat-btn"; btnLimpiar.innerText = "📋 Todos los Licores"; btnLimpiar.onclick = function() { subcategoriaActual = null; aplicarFiltros(); closeCategorias(); }; subcatContainer.appendChild(btnLimpiar);
+    Array.from(subcategoriasDisponibles).sort().forEach(subcat => {
+        let btn = document.createElement('button'); btn.className = (subcat === subcategoriaActual) ? "cat-btn active" : "cat-btn"; btn.innerText = subcat;
+        let colorBase = coloresSubcat[colorIndex % coloresSubcat.length];
+        if (subcat === subcategoriaActual) { btn.style.backgroundColor = colorBase; btn.style.borderColor = colorBase; btn.style.color = "white"; } else { btn.style.borderColor = colorBase; btn.style.color = colorBase; btn.style.backgroundColor = "transparent"; }
+        btn.onclick = function() { subcategoriaActual = subcat; aplicarFiltros(); closeCategorias(); }; subcatContainer.appendChild(btn); colorIndex++;
+    });
+}
+
+function filtrarCategoria(cat, btn) {
+    categoriaActual = cat; subcategoriaActual = null;
+    let subcatSection = document.getElementById('subcategoria-section-main'); if (cat !== 'LICORES' && subcatSection) { subcatSection.style.display = 'none'; }
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active');
+    if (cat === 'LICORES') { generarSubcategoriasLicores(); aplicarFiltros(); } else { aplicarFiltros(); closeCategorias(); }
+}
+function toggleCategorias() { const panel = document.getElementById('categoria-panel'); const overlay = document.getElementById('categoria-overlay'); if(!panel || !overlay) return; const isOpen = panel.classList.toggle('open'); overlay.style.display = isOpen ? 'block' : 'none'; }
+function closeCategorias() { const panel = document.getElementById('categoria-panel'); const overlay = document.getElementById('categoria-overlay'); if(panel) panel.classList.remove('open'); if(overlay) overlay.style.display = 'none'; }
+
+// --- SUGERENCIAS E INTERACCIONES ---
+function mostrarSugerencias(q) {
+    let qLimpio = quitarAcentos(q); let terminos = qLimpio.split(' ').filter(t => t.length > 0).map(procesarTermino);
+    let coincidencias = inventario.filter(p => {
+        if(p.StockNum <= 0) return false;
+        let textoCompleto = p.TextoBusquedaLimpio; let words = textoCompleto.split(' ');
+        let coincide = terminos.every(term => { if (textoCompleto.includes(term)) return true; if (term.length >= 4) return words.some(w => levenshtein(term, w) <= (term.length >= 6 ? 2 : 1)); return false; });
+        if(coincide) { let nLimpio = quitarAcentos(p.Nombre); let wNombre = nLimpio.split(' '); p.TempScore = 0; terminos.forEach(t => { if(wNombre.includes(t)) p.TempScore += 50; else if(nLimpio.includes(t)) p.TempScore += 25; else p.TempScore += 10; }); } return coincide;
+    });
+    coincidencias.sort((a,b) => b.TempScore - a.TempScore); coincidencias = coincidencias.slice(0, 5);
+    const cont = document.getElementById('search-suggestions');
+    if(coincidencias.length === 0) { cerrarSugerencias(); aplicarFiltros(); return; }
+    cont.innerHTML = '';
+    coincidencias.forEach(p => { const div = document.createElement('div'); div.className = 'suggestion-item'; div.innerHTML = `<img src="assets/img/${p.codigo}.webp" onerror="imgFallback(this, '${p.codigo}')"><span>${p.Nombre}</span>`; div.onclick = () => { document.getElementById('buscador').value = p.Nombre; cerrarSugerencias(); aplicarFiltros(); }; cont.appendChild(div); });
+    cont.style.display = 'block'; aplicarFiltros();
+}
+function cerrarSugerencias() { document.getElementById('search-suggestions').style.display = 'none'; }
+document.addEventListener('click', (e) => { if(!e.target.closest('.search-container')) cerrarSugerencias(); });
+function toggleFav(codigo) { let index = favoritos.indexOf(codigo); if(index === -1) { favoritos.push(codigo); mostrarToast("Agregado a favoritos ❤️"); } else { favoritos.splice(index, 1); } localStorage.setItem('gc_favs', JSON.stringify(favoritos)); aplicarFiltros(); }
+function compartirProducto(nombre, precio) { const text = `¡Mira esta bebida! ${nombre} a solo $${precio}. ${window.location.href}`; if (navigator.share) { navigator.share({ title: 'Gran Catador', text, url: window.location.href }).catch(e => console.log(e)); return; } if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => mostrarToast("Texto copiado al portapapeles."), () => fallbackCopyText(text)); return; } fallbackCopyText(text); }
+function fallbackCopyText(text) { const textarea = document.createElement('textarea'); textarea.value = text; textarea.style.position = 'fixed'; textarea.style.opacity = '0'; document.body.appendChild(textarea); textarea.focus(); textarea.select(); try { document.execCommand('copy'); mostrarToast("Texto copiado al portapapeles."); } catch (e) { mostrarToast("No se pudo copiar al portapapeles."); } document.body.removeChild(textarea); }
+function compartirProductoB64(b64, p) { compartirProducto(decodificarNombre(b64), p); }
+
+// --- RENDERIZADO DE PRODUCTOS (Fase 5: Mejora de Rendimiento) ---
+function crearHTMLProducto(p) {
+    const isFav = favoritos.includes(p.codigo); 
+    const isAgotado = p.StockNum <= 0; 
+    const nombreB64 = codificarNombre(p.Nombre);
+    
+    const esModoCaja = (modoVistaGlobal === 'caja');
+    const precioUsdDin = esModoCaja ? p.PrecioCajaUsd : p.PrecioStr;
+    const precioBsDin = esModoCaja ? p.PrecioCajaBsStr : p.PrecioBsStr;
+    const iconoBtn = esModoCaja ? '📦' : '🍾';
+    const colorBtn = esModoCaja ? 'var(--dorado)' : 'var(--verde-btn)';
+    const colorTexto = esModoCaja ? 'black' : 'white';
+    const etiquetaModo = esModoCaja ? 'Precio por Caja' : 'Precio por Unidad';
+    const precioNum = esModoCaja ? p.PrecioCajaNum : p.PrecioNum;
+
+    return `
+        <div class="producto-card ${isAgotado ? 'agotado' : ''}">
+            ${isAgotado ? '<div class="badge-agotado">AGOTADO</div>' : ''}
+            <i class="fa-${isFav ? 'solid' : 'regular'} fa-heart btn-fav ${isFav ? 'active' : ''}" onclick="toggleFav('${p.codigo}')"></i>
+            <img loading="lazy" src="assets/img/${p.codigo}.webp" data-attempts="0" onerror="imgFallback(this, '${p.codigo}')" alt="${p.Nombre}">
+            <h3 class="producto-titulo">${p.Nombre}</h3>
+            <p class="producto-stock" style="margin-bottom:2px;">Disp: ${p.StockStr}</p>
+            
+            <p class="producto-precio">$${precioUsdDin} <span style="font-size:11px; color:var(--texto-claro); display:inline-block; font-weight:500;">/ ${precioBsDin} Bs</span></p>
+            <p style="font-size:10px; color:var(--texto-claro); font-weight:bold; margin-top:2px; margin-bottom: 30px;">${etiquetaModo}</p>
+            
+            <button class="btn-share" style="bottom: 12px; right: 50px;" onclick="compartirProductoB64('${nombreB64}', '${precioUsdDin}')"><i class="fa-solid fa-share-nodes"></i></button>
+            
+            <button class="btn-add ${isAgotado ? 'disabled' : ''}" style="width: 32px; border-radius: 8px; right: 12px; background: ${colorBtn}; color: ${colorTexto}; font-size: 13px;" title="Agregar" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoB64('${nombreB64}', ${precioNum}, this, false, 'assets/img/${p.codigo}.webp', ${esModoCaja})"`}>${iconoBtn}</button>
+        </div>
+    `;
+}
+
+function renderizarPagina() {
+    const cont = document.getElementById('lista-productos'); 
+    if (paginaActual === 1) cont.innerHTML = ''; 
+    
+    let inicio = (paginaActual - 1) * itemsPorPagina, fin = paginaActual * itemsPorPagina; 
+    let pedazo = productosFiltradosGlobal.slice(inicio, fin);
+    
+    if(productosFiltradosGlobal.length === 0) { 
+        if(paginaActual === 1) {
+            cont.innerHTML = `<div style="grid-column: span 2; text-align: center; padding: 40px 20px; color: var(--texto-claro);"><i class="fa-solid fa-wine-bottle" style="font-size: 60px; opacity: 0.3; margin-bottom: 15px;"></i><h3 style="color: var(--texto-oscuro); font-size: 16px; font-weight: bold;">¿Aún no tienes sed?</h3><p style="font-size: 13px; margin-top: 5px;">No encontramos botellas con esa descripción.</p><button onclick="irInicio()" class="cat-btn active" style="margin: 20px auto 0 auto; padding: 10px 20px;">Ver todo el catálogo</button></div>`; 
+            document.getElementById('btn-cargar-mas').style.display = 'none'; 
+        }
+        return; 
+    }
+    
+    const html = pedazo.map(crearHTMLProducto).join('');
+    cont.insertAdjacentHTML('beforeend', html);
+    
+    if (fin < productosFiltradosGlobal.length) document.getElementById('btn-cargar-mas').style.display = 'block'; 
+    else document.getElementById('btn-cargar-mas').style.display = 'none';
+}
+
+function cargarMasProductos() { paginaActual++; renderizarPagina(); }

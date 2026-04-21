@@ -1,7 +1,11 @@
-const CACHE_NAME = 'grancatador-v9'; // Actualizado por reestructuración
+const CACHE_NAME = 'grancatador-v13'; // Actualizado con ui.js
 const urlsToCache = [
   './',
   './index.html',
+  './js/utils.js',
+  './js/state.js',
+  './js/cart.js',
+  './js/ui.js',
   './js/app.js',
   './logo.png',
   './manifest.json',

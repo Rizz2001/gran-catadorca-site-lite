@@ -1,0 +1,31 @@
+/**
+ * utils.js - Funciones de utilidad general y configuración
+ * Este archivo no debe contener lógica de negocio (carrito, inventario) 
+ * ni manipulación directa del DOM (interfaz de usuario).
+ */
+
+// --- CONFIGURACIÓN ---
+const diccionarioSinonimos = { 'birra': 'cerveza', 'curda': 'licor', 'cana': 'ron', 'pasapalo': 'snack', 'soda': 'refresco', 'fresco': 'refresco', 'chuche': 'snack', 'chucheria': 'snack', 'champagne': 'espumante', 'champaña': 'espumante', 'vinito': 'vino', 'roncito': 'ron', 'aguardiente': 'licor' };
+
+// --- FUNCIONES DE TEXTO Y BÚSQUEDA ---
+function limpiarCategoria(texto) { if(!texto) return "Otros"; return texto.trim().replace(/\s+/g, ' ').toUpperCase(); }
+function quitarAcentos(texto) { return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+function parseNumber(texto) { if (texto == null) return 0; let str = texto.toString().trim().replace(/\./g, '').replace(',', '.'); let num = parseFloat(str); return Number.isFinite(num) ? num : 0; }
+
+// Algoritmo de distancia de Levenshtein (para búsquedas con errores ortográficos)
+function levenshtein(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++){for(let j=1;j<=a.length;j++){if(b.charAt(i-1)===a.charAt(j-1)){m[i][j]=m[i-1][j-1];}else{m[i][j]=Math.min(m[i-1][j-1]+1,Math.min(m[i][j-1]+1,m[i-1][j]+1));}}}return m[b.length][a.length];}
+
+// Cerebro para detectar plurales y sinónimos (Ej: rones -> ron, cervezas -> cerveza)
+function procesarTermino(t) { let sin = diccionarioSinonimos[t] || t; if (sin.length > 3 && sin !== 'anis' && sin.endsWith('s')) { return sin.endsWith('es') ? sin.slice(0, -2) : sin.slice(0, -1); } return sin; }
+
+// --- ENCODING / DECODING ---
+function codificarNombre(str) { try { return btoa(unescape(encodeURIComponent(str))); } catch(e) { return btoa(str); } }
+function decodificarNombre(b64) { try { return decodeURIComponent(escape(atob(b64))); } catch(e) { return atob(b64); } }
+
+// --- REDES Y DOM HELPERS GENÉRICOS ---
+const fetchCSV = (u) => new Promise((resolve, reject) => { Papa.parse(u, { download: true, encoding: "latin-1", complete: (r) => resolve(r.data), error: (err) => reject(err) }) });
+
+function imgFallback(imgElement, codigoProducto) {
+    let attempts = imgElement.dataset.attempts ? parseInt(imgElement.dataset.attempts) : 0; const formatos = ['webp', 'jpg', 'png', 'jpeg']; attempts++;
+    if (attempts < formatos.length) { imgElement.dataset.attempts = attempts; imgElement.src = `assets/img/${codigoProducto}.${formatos[attempts]}`; } else { imgElement.src = 'logo.png'; imgElement.onerror = null; }
+}
