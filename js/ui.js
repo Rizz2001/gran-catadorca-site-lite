@@ -112,6 +112,15 @@ function irInicio() {
     if(mTitle) mTitle.innerText = 'Inicio';
 }
 
+/** Limpia instantáneamente la barra de búsqueda y refresca los productos */
+window.limpiarBuscador = function() {
+    let input = document.getElementById('buscador');
+    if (input) input.value = '';
+    document.getElementById('clear-search').style.display = 'none';
+    cerrarSugerencias();
+    aplicarFiltros();
+}
+
 function abrirLegales() { 
     document.getElementById('modal-legales').style.display = 'flex'; 
 }

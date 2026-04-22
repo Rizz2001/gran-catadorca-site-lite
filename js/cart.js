@@ -67,6 +67,9 @@ function agregarAlCarrito(nombre, precio, btnElement, isCross = false, imgSrc = 
     guardarCarritoLS(); 
     actualizarCartCount(); 
     
+    // Haptic Feedback (Vibración nativa en móviles compatibles)
+    if (typeof navigator !== 'undefined' && navigator.vibrate) { navigator.vibrate(50); }
+    
     if (btnElement && imgSrc) {
         animarAlCarrito(btnElement, imgSrc);
     }

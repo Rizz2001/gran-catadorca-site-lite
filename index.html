@@ -84,6 +84,7 @@
                         <i class="fa-solid fa-magnifying-glass search-icon"></i>
                         <!-- Conectado al ID "buscador" para sincronizar sugerencias automáticas -->
                         <input type="text" id="buscador" placeholder="Buscar productos, categorías o marcas..." onkeyup="debounceBusqueda(event)" autocomplete="off">
+                        <i class="fa-solid fa-circle-xmark clear-search-icon" id="clear-search" onclick="limpiarBuscador()" aria-label="Limpiar búsqueda"></i>
                         <div id="search-suggestions"></div>
                     </div>
                 </div>
