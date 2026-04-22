@@ -59,6 +59,7 @@ function checkHorario() {
         
         if (horaCaracas >= 8 && horaCaracas < 21) {
             isTiendaAbierta = true;
+            appState.isTiendaAbierta = true;
             badge.innerHTML = "🟢 ABIERTO";
             badge.style.background = "rgba(37, 211, 102, 0.2)";
             badge.style.color = "#25D366";
@@ -67,6 +68,7 @@ function checkHorario() {
             if (msgCerrado) msgCerrado.style.display = "none";
         } else {
             isTiendaAbierta = false;
+            appState.isTiendaAbierta = false;
             badge.innerHTML = "🔴 CERRADO";
             badge.style.background = "rgba(234, 67, 53, 0.2)";
             badge.style.color = "#ea4335";

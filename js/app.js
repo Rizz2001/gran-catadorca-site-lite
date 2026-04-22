@@ -22,6 +22,7 @@ async function obtenerTasaDolar() {
                 // Usar la tasa promedio o la oficial
                 const tasaPromedio = data[0].promedio || data[0].precio || 36.25;
                 tasaOficial = parseFloat(tasaPromedio);
+                appState.tasaOficial = tasaOficial;
                 console.log(`💵 Tasa actualizada vía API: ${tasaOficial.toFixed(2)} Bs`);
                 // Guardar en localStorage para persistencia
                 localStorage.setItem('tasaDolar', tasaOficial.toString());
@@ -37,6 +38,7 @@ async function obtenerTasaDolar() {
             if (resTasa.ok) {
                 let texto = await resTasa.text();
                 tasaOficial = parseFloat(texto.trim().replace(',', '.'));
+                appState.tasaOficial = tasaOficial;
                 console.log(`📄 Tasa cargada desde archivo local: ${tasaOficial.toFixed(2)} Bs`);
                 localStorage.setItem('tasaDolar', tasaOficial.toString());
                 localStorage.setItem('tasaDolarTime', new Date().getTime().toString());
@@ -48,6 +50,7 @@ async function obtenerTasaDolar() {
             const tasaGuardada = localStorage.getItem('tasaDolar');
             if (tasaGuardada) {
                 tasaOficial = parseFloat(tasaGuardada);
+                appState.tasaOficial = tasaOficial;
                 console.log(`💾 Usando tasa en caché: ${tasaOficial.toFixed(2)} Bs`);
                 return true;
             }
@@ -86,8 +89,8 @@ async function obtenerArchivosExternos() {
     await obtenerTasaEuro();
     let tasaEuroEl = document.getElementById('tasaEuroValor'); if(tasaEuroEl) tasaEuroEl.innerText = tasaEuro.toFixed(2) + " Bs";
     
-    try { let resRec = await fetch('data/config/recomendados.txt?v=' + new Date().getTime()); if (resRec.ok) { let textoRec = await resRec.text(); codigosRecomendados = textoRec.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); } } catch (error) {}
-    try { let resDisp = await fetch('data/config/disponibles.txt?v=' + new Date().getTime()); if (resDisp.ok) { let textoDisp = await resDisp.text(); siempreDisponibles = textoDisp.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); } } catch (error) {}
+    try { let resRec = await fetch('data/config/recomendados.txt?v=' + new Date().getTime()); if (resRec.ok) { let textoRec = await resRec.text(); codigosRecomendados = textoRec.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); appState.codigosRecomendados = codigosRecomendados; } } catch (error) {}
+    try { let resDisp = await fetch('data/config/disponibles.txt?v=' + new Date().getTime()); if (resDisp.ok) { let textoDisp = await resDisp.text(); siempreDisponibles = textoDisp.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); appState.siempreDisponibles = siempreDisponibles; } } catch (error) {}
     
     // Cargar subcategorías de licores
     try {
@@ -184,6 +187,7 @@ async function cargarInventario() {
     
     if (cacheTime && cacheData && (ahora - parseInt(cacheTime)) < 3600000) {
         inventario = JSON.parse(cacheData);
+        appState.inventario = inventario;
         // Re-asignar subcategorías en caso de que los mapas se hayan actualizado
         inventario.forEach(p => {
             if (p.Cat === 'LICORES') p.SubCat = mapaCodToSubcategoria[p.codigo] || 'OTROS LICORES';
@@ -297,6 +301,7 @@ async function cargarInventario() {
         inventario.forEach(p => {
             if (p.Cat === 'LICORES') p.SubCat = mapaCodToSubcategoria[p.codigo] || 'OTROS LICORES';
         });
+        appState.inventario = inventario;
 
         if(inventario.length === 0) throw new Error("Inventario vacío");
         
