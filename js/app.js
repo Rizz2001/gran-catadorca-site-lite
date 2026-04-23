@@ -168,7 +168,7 @@ async function mostrarFechaActualizacion() {
         dateStr = d.toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
     let alertEl = document.getElementById('alert-actualizacion');
-    if (alertEl) { alertEl.innerHTML = `<i class="fa-solid fa-circle-info" style="color: var(--dorado); margin-right: 5px;"></i> Precios y Productos actualizados el día <b>${dateStr}</b>.<br>Antes de cancelar preguntar si hay disponibilidad.`; alertEl.style.display = 'block'; }
+    if (alertEl) { alertEl.innerHTML = `<button onclick="this.parentElement.style.display='none'" aria-label="Cerrar alerta" style="position: absolute; top: 8px; right: 10px; background: transparent; border: none; font-size: 14px; cursor: pointer; color: var(--color-text); opacity: 0.6;"><i class="fa-solid fa-xmark"></i></button><i class="fa-solid fa-circle-info" style="color: var(--dorado); margin-right: 5px;"></i> Precios y Productos actualizados el día <b>${dateStr}</b>.<br>Antes de cancelar preguntar si hay disponibilidad.`; alertEl.style.display = 'block'; }
 }
 
 async function cargarInventario() {

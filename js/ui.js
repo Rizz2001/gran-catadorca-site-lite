@@ -303,7 +303,7 @@ function crearHTMLProducto(p) {
                 <h3 class="producto-titulo" title="${p.Nombre}">${p.Nombre}</h3>
             </div>
             <p class="producto-stock" style="font-size: 12.5px; margin-top: 4px; margin-bottom: 8px; color: var(--color-text);">
-                ${p.StockStr.toString().toLowerCase() === 'disponible' ? '<b>Stock Disponible</b>' : `<b>${p.StockStr} und disponibles</b>`}
+                ${p.StockStr.toString().toLowerCase() === 'disponible' ? '<b>Stock Disponible</b>' : `<b>${p.StockNum} und disponibles</b>`}
             </p>
             
             <div class="product-bottom">
@@ -342,7 +342,7 @@ async function abrirDetalleProducto(codigo) {
     if (p.StockNum <= 0) {
         stockBadge.innerText = "AGOTADO"; stockBadge.style.background = "rgba(234, 67, 53, 0.1)"; stockBadge.style.color = "#ea4335";
     } else {
-        let stockText = p.StockStr.toString().toLowerCase() === 'disponible' ? 'Stock Disponible' : `${p.StockStr} und disponibles`;
+        let stockText = p.StockStr.toString().toLowerCase() === 'disponible' ? 'Stock Disponible' : `${p.StockNum} und disponibles`;
         stockBadge.innerText = stockText; stockBadge.style.background = "rgba(37, 211, 102, 0.1)"; stockBadge.style.color = "#25D366";
     }
     
