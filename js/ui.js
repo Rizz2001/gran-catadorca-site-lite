@@ -278,10 +278,6 @@ function crearHTMLProducto(p) {
     let badgeHTML = '';
     if (isAgotado) {
         badgeHTML = `<div class="product-badge badge-agotado">AGOTADO</div>`;
-    } else if (p.StockNum > 0 && p.StockNum <= 15) {
-        badgeHTML = `<div class="product-badge badge-orange">STOCK BAJO</div>`;
-    } else if (p.PrecioNum < 5) {
-        badgeHTML = `<div class="product-badge badge-green">OFERTA</div>`;
     }
 
     // Generar hasta 6 imágenes dinámicamente. Las que no existan se ocultarán solas sin dar error.
@@ -306,12 +302,14 @@ function crearHTMLProducto(p) {
                 
                 <h3 class="producto-titulo" title="${p.Nombre}">${p.Nombre}</h3>
             </div>
-            <p class="producto-stock">Disp: ${p.StockStr}</p>
+            <p class="producto-stock" style="font-size: 12.5px; margin-top: 4px; margin-bottom: 8px; color: var(--color-text);">
+                ${p.StockStr.toString().toLowerCase() === 'disponible' ? '<b>Stock Disponible</b>' : `<b>${p.StockStr} und disponibles</b>`}
+            </p>
             
             <div class="product-bottom">
                 <div class="product-price-container">
-                    <span class="product-price">$${precioUsdDin}</span>
-                    <span class="product-price-bs">${precioBsDin} Bs</span>
+                    <span class="product-price" style="font-size: 22px; font-weight: 900; line-height: 1.1;">$${precioUsdDin}</span>
+                    <span class="product-price-bs" style="font-size: 13px;">${precioBsDin} Bs</span>
                 </div>
                 
             <button class="btn-add-cart ${isAgotado ? 'disabled' : ''}" title="Agregar al carrito" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoB64('${nombreB64}', ${precioNum}, this, false, 'assets/img/${carpeta}/${p.codigo}/1.webp', ${esModoCaja})"`}>
@@ -337,11 +335,15 @@ async function abrirDetalleProducto(codigo) {
     document.getElementById('detalle-precio-usd').innerText = `$${precioUsdDin}`;
     document.getElementById('detalle-precio-bs').innerText = `${precioBsDin} Bs`;
     
+    let btnShare = document.getElementById('detalle-btn-share');
+    if (btnShare) btnShare.onclick = () => compartirProducto(p.Nombre, precioUsdDin);
+
     let stockBadge = document.getElementById('detalle-stock');
     if (p.StockNum <= 0) {
         stockBadge.innerText = "AGOTADO"; stockBadge.style.background = "rgba(234, 67, 53, 0.1)"; stockBadge.style.color = "#ea4335";
     } else {
-        stockBadge.innerText = `Disp: ${p.StockStr}`; stockBadge.style.background = "rgba(37, 211, 102, 0.1)"; stockBadge.style.color = "#25D366";
+        let stockText = p.StockStr.toString().toLowerCase() === 'disponible' ? 'Stock Disponible' : `${p.StockStr} und disponibles`;
+        stockBadge.innerText = stockText; stockBadge.style.background = "rgba(37, 211, 102, 0.1)"; stockBadge.style.color = "#25D366";
     }
     
     let imgContainer = document.getElementById('detalle-img-container');
