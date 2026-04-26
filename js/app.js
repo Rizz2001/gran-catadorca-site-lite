@@ -210,11 +210,11 @@ async function cargarInventario() {
     try {
         await cargarInventarioDesdeAPI();
 
-        actualizarCartCount(); 
-        generarCategorias(); 
+        actualizarCartCount();
+        generarCategorias();
         aplicarFiltros();
 
-        iniciarAutoActualizacion(); 
+        iniciarAutoActualizacion();
     } catch (e) {
         console.error("Error cargando inventario:", e);
         document.getElementById('lista-productos').innerHTML = `<div style="grid-column: span 2; text-align: center; padding: 30px; border: 1px solid red; border-radius: 10px;"><h3 style="color:red;">Error de Conexión</h3><p style="font-size:12px; margin-top:10px;">${e.message || 'Verifica la configuración de la API.'}</p></div>`;
@@ -239,8 +239,8 @@ function iniciarAutoActualizacion() {
 async function getSmartVentasToken() {
     // --- MODO PRUEBA: TOKEN MANUAL ---
     // Si tienes un token manual, colócalo aquí para saltarte el PHP temporalmente
-    const manualToken = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkEzQzAwMzgzMzMwMDE5OUJEMDNFNTE4MzE2MkNDM0RGIiwidHlwIjoiYXQrand0In0.eyJpc3MiOiJodHRwczovL2F1dGguZm94ZGF0YS5hcHAiLCJuYmYiOjE3NzcyMzUzNDEsImlhdCI6MTc3NzIzNTM0MSwiZXhwIjoxNzc3MjM4OTQxLCJhdWQiOiJodHRwczovL2F1dGguZm94ZGF0YS5hcHAvcmVzb3VyY2VzIiwic2NvcGUiOlsic21hcnR2ZW50YXMtYXBpIiwic21hcnR2ZW50YXMuc2VydmljZS5yZWFkIiwic21hcnR2ZW50YXMuc2VydmljZS53cml0ZSJdLCJjbGllbnRfaWQiOiJzbXZ0LWFwaXdlYi1DMDAwNiIsIkVtcHJlc2FJRCI6IkMwMDA2IiwiY2xpZW50X3R5cGUiOiJzZXJ2aWNlIiwiRW1wcmVzYU5vbWJyZSI6IkdSQU4gQ0FUQURPUiwgQy5BLiIsImp0aSI6IjdDQzUyNUNBREZCQUVCQjgxMkQxNkY3MDUyOTQxOTE1In0.WGOZRFMMdfir7K4DegeGJURxkgpRrvBfiMTzEiINf8O9F7iFE8LlCaIoskfDiu5XnbJjCcv0jgsAUicKftnLvFhGjXuW3stg8eXyu90LDDJl7TqVm30duFrt8CrfyX2eh1BjDCj5sDDko5fiOVLmMkzeQg5trdmhytQHC0E_FTcZg5kXs5Q5kxszBtUE1WArJQ8ko-1-I4ItOrj9GO5uy9R6RbfxyY3V4pLb11gU3Ndx4VLyVCjXixZyhVyMJnWY6xtI7ychBAtsTmD4QuOiT8W7AcMaYUDmstYfujDnBKYSMg2aQeXHS4iFPHquOXTG50uRNmSPpzhJOKhLlGJTcw';
-    
+    const manualToken = '';
+
     if (manualToken) {
         console.log("🎫 Usando Token Manual proporcionado...");
         return manualToken;
@@ -257,20 +257,30 @@ async function getSmartVentasToken() {
     }
 
     try {
-        console.log("🔄 Solicitando un nuevo Token Bearer al servidor...");
-        const response = await fetch('api/get_token.php');
-        if (!response.ok) throw new Error("Error obteniendo token desde el servidor local");
+        console.log("🔄 Solicitando un nuevo Token Bearer directamente a la API...");
 
-        const textRaw = await response.text();
-        let data;
-        try {
-            data = JSON.parse(textRaw);
-            console.log("📦 Respuesta JSON recibida del servidor:", data);
-        } catch (parseError) {
-            console.error("❌ El servidor no devolvió JSON válido. Respuesta cruda:", textRaw);
-            if (textRaw.includes('<?php')) throw new Error("Tu servidor no está procesando PHP (como Live Server). Necesitas XAMPP o un hosting real.");
-            throw new Error("Respuesta inválida de get_token.php: " + textRaw.substring(0, 60));
-        }
+        const bodyParams = new URLSearchParams({
+            'grant_type': 'client_credentials',
+            'client_id': 'smvt-apiweb-C0006',
+            'client_secret': 'i84so7BEzsUo',
+            'scope': 'smartventas-api smartventas.service.read smartventas.service.write'
+        });
+
+        const targetUrl = 'https://auth.foxdata.app/connect/token';
+        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+
+        const response = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            body: bodyParams
+        });
+
+        if (!response.ok) throw new Error("Error en la conexión con la API de autenticación HTTP " + response.status);
+
+        const data = await response.json();
 
         if (data.error) {
             throw new Error(data.error);
@@ -287,7 +297,7 @@ async function getSmartVentasToken() {
         return data.access_token;
     } catch (e) {
         console.error("Error en autenticación SmartVentas:", e);
-        return null;
+        throw e;
     }
 }
 
@@ -296,14 +306,14 @@ async function cargarInventarioDesdeAPI() {
 
     let token = await getSmartVentasToken();
 
-    if (!token) throw new Error("No se pudo obtener el token de acceso.");
+    if (!token) throw new Error("Token vacío recibido del servidor.");
 
     // Consultamos el endpoint de Grupos de Inventario
-    // MODO PRUEBA: Usando proxy para saltar el bloqueo de CORS en local
-    const apiUrl = 'https://cors-anywhere.herokuapp.com/https://apismartventas.foxdata.app/api/v1/syn/gruposinv';
-    console.log("Consultando endpoint:", apiUrl);
+    const targetUrl = 'https://apismartventas.foxdata.app/api/v1/syn/gruposinv';
+    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+    console.log("Consultando endpoint:", targetUrl);
 
-    const response = await fetch(apiUrl, {
+    const response = await fetch(proxyUrl, {
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
