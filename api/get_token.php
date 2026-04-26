@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *'); // Ajustar por seguridad según sea necesario
 
 // 1. Credenciales de la API SmartVentas
-$tokenUrl = 'https://apismartventas.foxdata.app/connect/token';
+$tokenUrl = 'https://auth.foxdata.app/connect/token';
 $client_id = 'smvt-apiweb-C0006';
 $client_secret = 'i84so7BEzsUo';
 $scope = 'smartventas-api smartventas.service.read smartventas.service.write';
