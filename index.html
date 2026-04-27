@@ -27,13 +27,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
-    <style>
-        /* Evita que el menú inferior (bottom-nav) tape el footer o el botón de "Cargar más" */
-        body {
-            padding-bottom: 75px !important;
-        }
-    </style>
-
 </head>
 
 <body>
@@ -98,10 +91,6 @@
 
                     <!-- Izquierda: Menú (Móvil), Logo y Ubicación -->
                     <div class="header-left">
-                        <button class="icon-btn mobile-only" onclick="history.back()" aria-label="Atrás"
-                            style="background: transparent;">
-                            <i class="fa-solid fa-arrow-left"></i>
-                        </button>
                         <div class="header-brand" onclick="irInicio()">
                             <img src="logo.png" alt="Logo Gran Catador"
                                 style="height: 32px; width: 32px; border-radius: 4px; object-fit: contain;">
@@ -140,6 +129,9 @@
                         </button>
                         <button class="icon-btn" onclick="abrirPerfil()" aria-label="Mi Perfil">
                             <i class="fa-regular fa-user"></i>
+                        </button>
+                        <button class="icon-btn" onclick="abrirAjustes()" aria-label="Ajustes">
+                            <i class="fa-solid fa-gear"></i>
                         </button>
                     </div>
                 </div>
@@ -195,10 +187,6 @@
             <span id="store-status" style="display:none;"></span>
         </div>
     </header>
-
-    <div id="alert-actualizacion" class="container"
-        style="display:none; position: relative; background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.4); color: var(--color-text); padding: 12px 25px 12px 15px; border-radius: 8px; text-align: center; font-size: 12.5px; margin-top: 15px; line-height: 1.5;">
-    </div>
 
     <div class="banners-container" id="contenedorBanners">
         <div class="promo-banner"
@@ -293,17 +281,6 @@
             <p>© 2026 Gran Catador C.A. Todos los derechos reservados.</p>
         </div>
     </footer>
-
-    <nav class="bottom-nav">
-        <a href="#" class="active" id="nav-home" onclick="irInicio()" aria-label="Ir al Inicio"><i
-                class="fa-solid fa-house" aria-hidden="true"></i></a>
-        <a href="#" id="nav-user" onclick="abrirPerfil()" aria-label="Ver mi Perfil"><i class="fa-regular fa-user"
-                aria-hidden="true"></i></a>
-        <a href="#" id="nav-cart" onclick="abrirCarrito()" aria-label="Abrir Carrito"><i class="fa-solid fa-list-ul"
-                aria-hidden="true"></i></a>
-        <a href="#" id="nav-settings" onclick="abrirAjustes()" aria-label="Abrir Ajustes"><i class="fa-solid fa-gear"
-                aria-hidden="true"></i></a>
-    </nav>
 
     <div id="toast-container"></div>
 

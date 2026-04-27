@@ -175,14 +175,16 @@ textarea {
 .horizontal-filters {
     display: flex;
     overflow-x: auto;
-    gap: 10px;
-    padding-bottom: 5px;
-    /* Espacio para que no se corte visualmente */
+    gap: 12px;
+    padding: 5px 5px 15px 5px;
+    /* Espacio extra para que no se corte la sombra */
     scrollbar-width: none;
-    /* Oculta scroll en Firefox */
     -ms-overflow-style: none;
-    /* Oculta scroll en IE/Edge */
     white-space: nowrap;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    /* Momentum scroll nativo en iOS y Android */
+    width: 100%;
 }
 
 .horizontal-filters::-webkit-scrollbar {
@@ -195,18 +197,33 @@ textarea {
     flex: 0 0 auto !important;
     min-width: max-content !important;
     width: auto !important;
-    border-radius: 20px !important;
-    padding: 8px 16px !important;
+    border-radius: 25px !important;
+    /* Más redondeados */
+    padding: 10px 20px !important;
+    /* Más grandes para tocarlos fácil */
     background: var(--item-bg, #fff);
     border: 1px solid var(--borde-color, #ddd) !important;
     color: var(--color-text, #333);
     font-weight: 600;
-    font-size: 13px;
+    font-size: 14px;
     transition: 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* Separación perfecta entre el ícono y el texto */
+    cursor: pointer;
+    user-select: none;
+}
+
+.horizontal-filters .cat-btn:active {
+    transform: scale(0.95);
+    /* Efecto hundimiento al tocar */
 }
 
 .horizontal-filters .cat-btn.active {
     background: var(--color-primary) !important;
     color: #fff !important;
     border-color: var(--color-primary) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    /* Sombra elegante al seleccionar */
 }

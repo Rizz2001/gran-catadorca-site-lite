@@ -150,31 +150,6 @@ async function obtenerArchivosExternos() {
     } catch (error) { console.log("Sin banners.txt"); }
 }
 
-async function mostrarFechaActualizacion() {
-    let dateStr = "recientemente";
-    try {
-        if (appSettings.useApi) {
-            let d = new Date();
-            dateStr = d.toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        } else {
-            let resHead = await fetch("data/inventario/Inventario Fisico general precio por unidad.csv", { method: 'HEAD', cache: 'no-cache' });
-            let lastMod = resHead.headers.get('Last-Modified');
-            if (lastMod) {
-                let d = new Date(lastMod);
-                dateStr = d.toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            } else {
-                let d = new Date();
-                dateStr = d.toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            }
-        }
-    } catch (e) {
-        let d = new Date();
-        dateStr = d.toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-    let alertEl = document.getElementById('alert-actualizacion');
-    if (alertEl) { alertEl.innerHTML = `<button onclick="this.parentElement.style.display='none'" aria-label="Cerrar alerta" style="position: absolute; top: 8px; right: 10px; background: transparent; border: none; font-size: 14px; cursor: pointer; color: var(--color-text); opacity: 0.6;"><i class="fa-solid fa-xmark"></i></button><i class="fa-solid fa-circle-info" style="color: var(--dorado); margin-right: 5px;"></i> Precios y Productos actualizados el día <b>${dateStr}</b>.<br>Antes de cancelar preguntar si hay disponibilidad.`; alertEl.style.display = 'block'; }
-}
-
 async function cargarConfiguracionDesdeArchivos() {
     try { let resRec = await fetch('data/config/recomendados.txt?v=' + new Date().getTime()); if (resRec.ok) { let textoRec = await resRec.text(); codigosRecomendados = textoRec.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); appState.codigosRecomendados = codigosRecomendados; } } catch (error) { }
     try { let resDisp = await fetch('data/config/disponibles.txt?v=' + new Date().getTime()); if (resDisp.ok) { let textoDisp = await resDisp.text(); siempreDisponibles = textoDisp.split(/[\n,]+/).map(c => c.trim()).filter(c => c !== ""); appState.siempreDisponibles = siempreDisponibles; } } catch (error) { }
@@ -203,7 +178,6 @@ async function cargarInventario() {
     await loadAppSettings();
     await obtenerArchivosExternos();
 
-    mostrarFechaActualizacion();
     toggleDireccion();
     inyectarInterruptor();
 
@@ -225,7 +199,7 @@ function iniciarAutoActualizacion() {
     // Evitar que se creen múltiples temporizadores paralelos
     if (window.autoSyncTimer) clearInterval(window.autoSyncTimer);
 
-    // Ejecutar silenciosamente cada 1 hora (3600000 ms)
+    // Ejecutar silenciosamente cada 10 minutos (600000 ms)
     window.autoSyncTimer = setInterval(async () => {
         console.log("⏱️ Sincronizando con SmartVentas en segundo plano...");
         try {
@@ -233,7 +207,7 @@ function iniciarAutoActualizacion() {
             localStorage.setItem('gc_inv_time_v4', new Date().getTime().toString());
             aplicarFiltros(); // Refresca la vista automáticamente si detecta un cambio de precio/stock
         } catch (e) { console.log("⚠️ Error en sincronización silenciosa:", e.message); }
-    }, 3600000);
+    }, 600000);
 }
 
 async function cargarInventarioDesdeAPI() {
