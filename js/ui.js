@@ -3,9 +3,9 @@
  */
 
 // --- VERIFICACIÓN DE EDAD Y HORARIO ---
-if (localStorage.getItem('ageVerified') === 'true') { 
-    let ag = document.getElementById('age-gate'); 
-    if (ag) ag.style.display = 'none'; 
+if (localStorage.getItem('ageVerified') === 'true') {
+    let ag = document.getElementById('age-gate');
+    if (ag) ag.style.display = 'none';
 }
 
 /** Valida si el usuario cumple con la edad mínima (18 años) */
@@ -14,34 +14,34 @@ function verificarEdad() {
     let m = document.getElementById('age-m').value;
     let y = document.getElementById('age-y').value;
     let err = document.getElementById('age-error');
-    
+
     let dia = Number(d), mes = Number(m), ano = Number(y);
-    
-    if (!dia || !mes || !ano || dia > 31 || mes > 12 || ano < 1900) { 
-        err.innerText = "Ingresa una fecha válida."; 
-        err.style.display = "block"; 
-        return; 
+
+    if (!dia || !mes || !ano || dia > 31 || mes > 12 || ano < 1900) {
+        err.innerText = "Ingresa una fecha válida.";
+        err.style.display = "block";
+        return;
     }
-    
+
     let birth = new Date(ano, mes - 1, dia);
-    if (birth.getFullYear() !== ano || birth.getMonth() !== mes - 1 || birth.getDate() !== dia) { 
-        err.innerText = "Ingresa una fecha válida."; 
-        err.style.display = "block"; 
-        return; 
+    if (birth.getFullYear() !== ano || birth.getMonth() !== mes - 1 || birth.getDate() !== dia) {
+        err.innerText = "Ingresa una fecha válida.";
+        err.style.display = "block";
+        return;
     }
-    
-    let today = new Date(); 
+
+    let today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     let mDiff = today.getMonth() - birth.getMonth();
-    
+
     if (mDiff < 0 || (mDiff === 0 && today.getDate() < birth.getDate())) age--;
-    
-    if (age >= 18) { 
-        localStorage.setItem('ageVerified', 'true'); 
-        document.getElementById('age-gate').style.display = 'none'; 
-    } else { 
-        err.innerText = "Lo sentimos, debes ser mayor de 18 años."; 
-        err.style.display = "block"; 
+
+    if (age >= 18) {
+        localStorage.setItem('ageVerified', 'true');
+        document.getElementById('age-gate').style.display = 'none';
+    } else {
+        err.innerText = "Lo sentimos, debes ser mayor de 18 años.";
+        err.style.display = "block";
     }
 }
 
@@ -54,9 +54,9 @@ function checkHorario() {
         let badge = document.getElementById('store-status');
         let btnWs = document.getElementById('btn-whatsapp');
         let msgCerrado = document.getElementById('msg-cerrado');
-        
+
         if (!badge) return;
-        
+
         if (horaCaracas >= 8 && horaCaracas < 21) {
             isTiendaAbierta = true;
             appState.isTiendaAbierta = true;
@@ -76,44 +76,44 @@ function checkHorario() {
             if (btnWs) btnWs.classList.add('disabled');
             if (msgCerrado) msgCerrado.style.display = "block";
         }
-    } catch(e) { console.log("Error en horario"); }
+    } catch (e) { console.log("Error en horario"); }
 }
 
-checkHorario(); 
+checkHorario();
 setInterval(checkHorario, 60000);
 
 // --- NAVEGACIÓN Y MODALES ---
 /** Marca como activo el ícono correspondiente en la barra de navegación inferior */
-function setActiveNav(id) { 
-    document.querySelectorAll('.bottom-nav a').forEach(a => a.classList.remove('active')); 
-    const el = document.getElementById(id); 
-    if(el) el.classList.add('active'); 
+function setActiveNav(id) {
+    document.querySelectorAll('.bottom-nav a').forEach(a => a.classList.remove('active'));
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
 }
 
 /** Restablece la vista al menú principal (Inicio) */
-function irInicio() { 
-    cerrarModal('all'); 
-    setActiveNav('nav-home'); 
-    window.scrollTo({top: 0, behavior: 'smooth'}); 
-    
-    document.getElementById('buscador').value = ''; 
-    document.getElementById('chkAgotados').checked = false; 
-    cerrarSugerencias(); 
-    subcategoriaActual = null; 
-    
-    let subcatSection = document.getElementById('subcategoria-section-main'); 
-    if(subcatSection) subcatSection.style.display = 'none'; 
-    
-    let btnInicio = Array.from(document.querySelectorAll('.cat-btn')).find(b => b.innerText.includes('Inicio')); 
-    if(btnInicio) filtrarCategoria('Todos', btnInicio); 
-    else filtrarCategoria('Todos', document.querySelectorAll('.cat-btn')[0]); 
-    
+function irInicio() {
+    cerrarModal('all');
+    setActiveNav('nav-home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    document.getElementById('buscador').value = '';
+    document.getElementById('chkAgotados').checked = false;
+    cerrarSugerencias();
+    subcategoriaActual = null;
+
+    let subcatSection = document.getElementById('subcategoria-section-main');
+    if (subcatSection) subcatSection.style.display = 'none';
+
+    let btnInicio = Array.from(document.querySelectorAll('.cat-btn')).find(b => b.innerText.includes('Inicio'));
+    if (btnInicio) filtrarCategoria('Todos', btnInicio);
+    else filtrarCategoria('Todos', document.querySelectorAll('.cat-btn')[0]);
+
     let mTitle = document.getElementById('mobile-header-title');
-    if(mTitle) mTitle.innerText = 'Inicio';
+    if (mTitle) mTitle.innerText = 'Inicio';
 }
 
 /** Limpia instantáneamente la barra de búsqueda y refresca los productos */
-window.limpiarBuscador = function() {
+window.limpiarBuscador = function () {
     let input = document.getElementById('buscador');
     if (input) input.value = '';
     document.getElementById('clear-search').style.display = 'none';
@@ -121,32 +121,32 @@ window.limpiarBuscador = function() {
     aplicarFiltros();
 }
 
-function abrirLegales() { 
-    document.getElementById('modal-legales').style.display = 'flex'; 
+function abrirLegales() {
+    document.getElementById('modal-legales').style.display = 'flex';
 }
 
-function abrirSoporteWhatsApp() { 
-    let msg = "Hola, necesito ayuda con la plataforma de Gran Catador."; 
-    window.open(`https://wa.me/584245496366?text=${encodeURIComponent(msg)}`, '_blank'); 
+function abrirSoporteWhatsApp() {
+    let msg = "Hola, necesito ayuda con la plataforma de Gran Catador.";
+    window.open(`https://wa.me/584245496366?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 /** Abre la vista de perfil y dibuja el historial de pedidos */
-function abrirPerfil() { 
-    cerrarModal('all'); 
-    setActiveNav('nav-user'); 
-    document.getElementById('modal-perfil').style.display = 'flex'; 
-    document.getElementById('perfilNombre').value = localStorage.getItem('gc_nombre') || ''; 
-    document.getElementById('perfilDireccion').value = localStorage.getItem('gc_direccion') || ''; 
-    
-    let hist = JSON.parse(localStorage.getItem('gc_historial')) || []; 
-    let listCont = document.getElementById('historial-lista'); 
-    
-    if (hist.length === 0) { 
-        listCont.innerHTML = '<p style="font-size:12px; color:gray; text-align:center;">Aún no tienes pedidos registrados.</p>'; 
-    } else { 
+function abrirPerfil() {
+    cerrarModal('all');
+    setActiveNav('nav-user');
+    document.getElementById('modal-perfil').style.display = 'flex';
+    document.getElementById('perfilNombre').value = localStorage.getItem('gc_nombre') || '';
+    document.getElementById('perfilDireccion').value = localStorage.getItem('gc_direccion') || '';
+
+    let hist = JSON.parse(localStorage.getItem('gc_historial')) || [];
+    let listCont = document.getElementById('historial-lista');
+
+    if (hist.length === 0) {
+        listCont.innerHTML = '<p style="font-size:12px; color:gray; text-align:center;">Aún no tienes pedidos registrados.</p>';
+    } else {
         let htmlHistorial = '';
-        hist.forEach((ped, index) => { 
-            let itemsT = ped.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', '); 
+        hist.forEach((ped, index) => {
+            let itemsT = ped.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
             htmlHistorial += `
                 <div class="historial-item" style="border:1px solid var(--color-border); background:var(--color-card); box-shadow:var(--shadow-sm); padding:15px; border-radius:var(--radius-md); margin-bottom:12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -157,36 +157,36 @@ function abrirPerfil() {
                     <button onclick="repetirPedido(${index})" style="background:rgba(30,58,138,0.1); color:var(--color-primary); border:none; padding:10px; width:100%; border-radius:var(--radius-full); font-size:13px; font-weight:700; cursor:pointer; transition:0.2s;">
                         <i class="fa-solid fa-rotate-right"></i> Repetir pedido
                     </button>
-                </div>`; 
-        }); 
+                </div>`;
+        });
         listCont.innerHTML = htmlHistorial;
-    } 
+    }
 }
 
 /** Guarda las preferencias del perfil del usuario */
-function guardarPerfil() { 
-    localStorage.setItem('gc_nombre', document.getElementById('perfilNombre').value); 
-    localStorage.setItem('gc_direccion', document.getElementById('perfilDireccion').value); 
-    mostrarToast("Datos guardados ✅"); 
-    cerrarModal('modal-perfil', 'nav-home'); 
+function guardarPerfil() {
+    localStorage.setItem('gc_nombre', document.getElementById('perfilNombre').value);
+    localStorage.setItem('gc_direccion', document.getElementById('perfilDireccion').value);
+    mostrarToast("Datos guardados ✅");
+    cerrarModal('modal-perfil', 'nav-home');
 }
 
-function abrirAjustes() { 
-    cerrarModal('all'); 
-    setActiveNav('nav-settings'); 
-    document.getElementById('modal-ajustes').style.display = 'flex'; 
-    document.getElementById('toggleDarkMode').checked = document.body.classList.contains('dark-mode'); 
+function abrirAjustes() {
+    cerrarModal('all');
+    setActiveNav('nav-settings');
+    document.getElementById('modal-ajustes').style.display = 'flex';
+    document.getElementById('toggleDarkMode').checked = document.body.classList.contains('dark-mode');
 }
 
-function toggleDark() { 
-    document.body.classList.toggle('dark-mode'); 
-    localStorage.setItem('gc_dark', document.body.classList.contains('dark-mode')); 
+function toggleDark() {
+    document.body.classList.toggle('dark-mode');
+    localStorage.setItem('gc_dark', document.body.classList.contains('dark-mode'));
 }
 function mostrarToast(msg) { const cont = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = msg; cont.appendChild(t); setTimeout(() => t.remove(), 2500); }
 
 // --- VISTAS Y CATEGORÍAS ---
 function cambiarModoVista(modo) { modoVistaGlobal = modo; document.getElementById('btn-modo-unidad').classList.remove('active'); document.getElementById('btn-modo-caja').classList.remove('active'); document.getElementById('btn-modo-' + modo).classList.add('active'); aplicarFiltros(); }
-function inyectarInterruptor() { let cont = document.querySelector('.tools-container'); if(cont && !document.getElementById('toggle-modo-global')) { let div = document.createElement('div'); div.id = 'toggle-modo-global'; div.className = 'toggle-modo-container'; div.innerHTML = `<div class="btn-modo active" id="btn-modo-unidad" onclick="cambiarModoVista('unidad')">🍾 Por Unidad</div><div class="btn-modo" id="btn-modo-caja" onclick="cambiarModoVista('caja')">📦 Por Caja</div>`; cont.insertBefore(div, cont.children[1]); } }
+function inyectarInterruptor() { let cont = document.querySelector('.tools-container'); if (cont && !document.getElementById('toggle-modo-global')) { let div = document.createElement('div'); div.id = 'toggle-modo-global'; div.className = 'toggle-modo-container'; div.innerHTML = `<div class="btn-modo active" id="btn-modo-unidad" onclick="cambiarModoVista('unidad')">🍾 Por Unidad</div><div class="btn-modo" id="btn-modo-caja" onclick="cambiarModoVista('caja')">📦 Por Caja</div>`; cont.insertBefore(div, cont.children[1]); } }
 
 function getIconForCategory(cat) {
     if (!cat) return 'fa-box-open';
@@ -207,36 +207,36 @@ function getIconForCategory(cat) {
 }
 
 function generarCategorias() {
-    const cont = document.getElementById('contenedorCategorias'); 
+    const cont = document.getElementById('contenedorCategorias');
     if (!cont) return;
-    
+
     cont.innerHTML = '';
-    
+
     // Botón Inicio
-    let btnInicio = document.createElement('button'); 
-    btnInicio.className = (categoriaActual === 'Todos') ? "cat-btn active" : "cat-btn"; 
-    btnInicio.innerHTML = `<i class="fa-solid fa-shop"></i><span>Inicio</span>`; 
-    btnInicio.onclick = function() { irInicio(); }; 
+    let btnInicio = document.createElement('button');
+    btnInicio.className = (categoriaActual === 'Todos') ? "cat-btn active" : "cat-btn";
+    btnInicio.innerHTML = `<i class="fa-solid fa-shop"></i><span>Inicio</span>`;
+    btnInicio.onclick = function () { irInicio(); };
     cont.appendChild(btnInicio);
-    
+
     // Botón Favoritos
-    let btnFav = document.createElement('button'); 
-    btnFav.className = (categoriaActual === 'Favoritos') ? "cat-btn active" : "cat-btn"; 
-    btnFav.innerHTML = `<i class="fa-solid fa-heart" style="${categoriaActual !== 'Favoritos' ? 'color: #ff4757;' : ''}"></i><span>Favoritos</span>`; 
-    btnFav.onclick = function() { filtrarCategoria('Favoritos', this); }; 
+    let btnFav = document.createElement('button');
+    btnFav.className = (categoriaActual === 'Favoritos') ? "cat-btn active" : "cat-btn";
+    btnFav.innerHTML = `<i class="fa-solid fa-heart" style="${categoriaActual !== 'Favoritos' ? 'color: #ff4757;' : ''}"></i><span>Favoritos</span>`;
+    btnFav.onclick = function () { filtrarCategoria('Favoritos', this); };
     cont.appendChild(btnFav);
-    
+
     console.log("🛠️ Generando Grupos. Grupos API:", appState.gruposInventario?.length);
 
     // Categorías de la API SmartVentas
     if (appState.gruposInventario && appState.gruposInventario.length > 0) {
         appState.gruposInventario.forEach(g => {
-            let nombre = g.Nombre || g.nombre || g.Descripcion || g.descripcion || g.NombreGrupo || g.desc_grupo;
+            let nombre = g.Nombre || g.nombre || g.Descripcion || g.descripcion || g.NombreGrupo || g.desc_grupo || g.DescGrupo;
             if (nombre) {
                 let b = document.createElement('button');
-                b.className = (nombre === categoriaActual) ? "cat-btn active" : "cat-btn";
+                b.className = (limpiarCategoria(nombre) === limpiarCategoria(categoriaActual)) ? "cat-btn active" : "cat-btn";
                 b.innerHTML = `<i class="fa-solid ${getIconForCategory(nombre)}"></i><span>${nombre}</span>`;
-                b.onclick = function() { filtrarCategoria(nombre, this); };
+                b.onclick = function () { filtrarCategoria(nombre, this); };
                 cont.appendChild(b);
             }
         });
@@ -249,79 +249,174 @@ function generarCategorias() {
     }
 
     // Manejo de subcategorías y scroll
-    if (categoriaActual === 'LICORES') { 
-        generarSubcategoriasLicores(); 
-    } else { 
-        let subcatSection = document.getElementById('subcategoria-section-main'); 
-        if(subcatSection) subcatSection.style.display = 'none'; 
+    if (categoriaActual !== 'Todos' && categoriaActual !== 'Favoritos') {
+        cargarSubcategoriasAPI(categoriaActual);
+    } else {
+        let subcatSection = document.getElementById('subcategoria-section-main');
+        if (subcatSection) subcatSection.style.display = 'none';
     }
-    
-    setTimeout(() => { 
-        let activeBtn = cont.querySelector('.active'); 
-        if(activeBtn) activeBtn.scrollIntoView({behavior: "smooth", inline: "center", block: "nearest"}); 
+
+    setTimeout(() => {
+        let activeBtn = cont.querySelector('.active');
+        if (activeBtn) activeBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
     }, 150);
 }
 
-function generarSubcategoriasLicores() {
-    let subcatSection = document.getElementById('subcategoria-section-main'), subcatContainer = document.getElementById('contenedorSubcategorias');
+async function cargarSubcategoriasAPI(nombreCategoria) {
+    let subcatSection = document.getElementById('subcategoria-section-main');
+    let subcatContainer = document.getElementById('contenedorSubcategorias');
     if (!subcatSection || !subcatContainer) return;
-    const subcategoriasDisponibles = new Set(); inventario.forEach(p => { if(p.Cat === 'LICORES' && p.SubCat) { subcategoriasDisponibles.add(p.SubCat); } });
-    if (subcategoriasDisponibles.size === 0) { subcatSection.style.display = 'none'; return; }
-    subcatSection.style.display = 'block'; subcatContainer.innerHTML = '';
-    let btnLimpiar = document.createElement('button'); btnLimpiar.className = (!subcategoriaActual) ? "cat-btn active" : "cat-btn"; btnLimpiar.innerHTML = `<i class="fa-solid fa-list"></i><span>Todos</span>`; btnLimpiar.onclick = function() { subcategoriaActual = null; aplicarFiltros(); closeCategorias(); }; subcatContainer.appendChild(btnLimpiar);
-    Array.from(subcategoriasDisponibles).sort().forEach(subcat => {
-        let btn = document.createElement('button'); btn.className = (subcat === subcategoriaActual) ? "cat-btn active" : "cat-btn"; btn.innerHTML = `<i class="fa-solid ${getIconForCategory(subcat)}"></i><span>${subcat}</span>`; btn.onclick = function() { subcategoriaActual = subcat; aplicarFiltros(); closeCategorias(); }; subcatContainer.appendChild(btn);
-    });
+
+    // Mostrar visualmente que está cargando para que sepas que el clic funcionó
+    subcatSection.style.display = 'block';
+    subcatContainer.innerHTML = '<div style="padding: 10px 15px; font-size: 13px; color: var(--color-primary); font-weight: 600;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando subgrupos...</div>';
+
+    // Buscar el código del grupo de forma segura
+    let grupo = null;
+    if (appState.gruposInventario) {
+        grupo = appState.gruposInventario.find(g => {
+            let nom = g.Nombre || g.nombre || g.descripcion || g.Descripcion || g.NombreGrupo || g.DescGrupo || g.desc_grupo || "";
+            return limpiarCategoria(nom) === limpiarCategoria(nombreCategoria);
+        });
+    }
+
+    let codGrupo = grupo ? (grupo.CodGrupo || grupo.codigo || grupo.id || grupo.Codigo || grupo.Id || grupo.grupo || grupo.Grupo || grupo.id_grupo || "").toString().trim() : "";
+    let subcategorias = [];
+
+    // 1. Intentar obtener de la API de Foxdata
+    if (codGrupo) {
+        try {
+            console.log(`📡 Consultando API para subgrupos del grupo: ${nombreCategoria} (ID: ${codGrupo})`);
+            const proxyBaseUrl = window.location.hostname.includes('pages.dev') ? '/api/proxy' : 'https://gran-catador.pages.dev/api/proxy';
+            const res = await fetch(`${proxyBaseUrl}?endpoint=gruposinvsub/grupo/${encodeURIComponent(codGrupo)}`);
+            if (res.ok) {
+                const data = await res.json();
+                console.log(`✔️ Respuesta API Subgrupos:`, data);
+                subcategorias = Array.isArray(data) ? data : (data.data || data.result || []);
+            }
+        } catch (e) {
+            console.warn("⚠️ Falló la API de subgrupos, usando analizador local.", e);
+        }
+    }
+
+    // 2. ANALIZADOR DE RESPALDO: Analizar el inventario local si la API no devuelve nada
+    if (subcategorias.length === 0) {
+        console.log(`🪄 Analizando productos locales para extraer subgrupos de: ${nombreCategoria}`);
+        let productosDelGrupo = inventario.filter(p => p.Cat === limpiarCategoria(nombreCategoria) || (codGrupo !== "" && p.CatId === codGrupo));
+
+        let mapaSubcats = new Map();
+        productosDelGrupo.forEach(p => {
+            let nomSub = (p.SubCat || "").trim();
+            if (nomSub && nomSub.toUpperCase() !== 'OTROS') {
+                let idSub = (p.SubCatId || nomSub).toString().trim();
+                mapaSubcats.set(idSub, nomSub); // Guardar usando el ID para no duplicar
+            }
+        });
+
+        mapaSubcats.forEach((nombreSub, idSub) => {
+            subcategorias.push({ codigo: idSub, nombre: nombreSub });
+        });
+
+        console.log("🔍 Subgrupos detectados por el analizador:", subcategorias);
+    }
+
+    // 3. Renderizar en la pantalla
+    if (subcategorias.length > 0) {
+        subcatContainer.innerHTML = '';
+
+        let btnLimpiar = document.createElement('button');
+        btnLimpiar.className = (!subcategoriaActual) ? "subcat-btn active" : "subcat-btn";
+        btnLimpiar.innerHTML = '<i class="fa-solid fa-list"></i><span>Todos</span>';
+        btnLimpiar.onclick = function () {
+            subcategoriaActual = null;
+            Array.from(subcatContainer.children).forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            aplicarFiltros();
+        };
+        subcatContainer.appendChild(btnLimpiar);
+
+        subcategorias.forEach(sub => {
+            let nombreSub = sub.nombre || sub.descripcion || sub.Nombre || sub.desc_subgrupo || "Subgrupo";
+            let codSub = (sub.CodSubgrupo || sub.codigo || sub.id || sub.subgrupo || sub.id_subgrupo || limpiarCategoria(nombreSub)).toString().trim();
+
+            // Formatear Nombre (Capitalizar primera letra: "Whisky" en vez de "WHISKY")
+            let nombreMostrado = nombreSub.charAt(0).toUpperCase() + nombreSub.slice(1).toLowerCase();
+
+            let btn = document.createElement('button');
+            btn.className = (codSub === subcategoriaActual || limpiarCategoria(nombreSub) === subcategoriaActual) ? "subcat-btn active" : "subcat-btn";
+            btn.innerHTML = `<span>${nombreMostrado}</span>`;
+            btn.onclick = function () {
+                subcategoriaActual = codSub;
+                Array.from(subcatContainer.children).forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                aplicarFiltros();
+            };
+            subcatContainer.appendChild(btn);
+        });
+
+        subcatSection.style.display = 'block';
+        subcatContainer.scrollLeft = 0;
+    } else {
+        subcatSection.style.display = 'none';
+        console.warn(`❌ El grupo "${nombreCategoria}" no tiene subgrupos asignados en la base de datos.`);
+    }
 }
 
 function filtrarCategoria(cat, btn) {
     categoriaActual = cat; subcategoriaActual = null;
-    let subcatSection = document.getElementById('subcategoria-section-main'); if (cat !== 'LICORES' && subcatSection) { subcatSection.style.display = 'none'; }
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active');
-    
+    let subcatSection = document.getElementById('subcategoria-section-main');
+    if (subcatSection) { subcatSection.style.display = 'none'; }
+
+    document.querySelectorAll('#contenedorCategorias .cat-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
     let mTitle = document.getElementById('mobile-header-title');
-    if(mTitle) mTitle.innerText = (cat === 'Todos') ? 'Inicio' : (cat === 'LICORES' ? 'Licores' : cat);
-    
-    if (cat === 'LICORES') { generarSubcategoriasLicores(); aplicarFiltros(); } else { aplicarFiltros(); closeCategorias(); }
+    if (mTitle) mTitle.innerText = (cat === 'Todos') ? 'Inicio' : cat;
+
+    aplicarFiltros();
+
+    if (cat !== 'Todos' && cat !== 'Favoritos') {
+        cargarSubcategoriasAPI(cat);
+    }
 }
-function toggleCategorias() { const panel = document.getElementById('categoria-panel'); const overlay = document.getElementById('categoria-overlay'); if(!panel || !overlay) return; const isOpen = panel.classList.toggle('open'); overlay.style.display = isOpen ? 'block' : 'none'; }
-function closeCategorias() { const panel = document.getElementById('categoria-panel'); const overlay = document.getElementById('categoria-overlay'); if(panel) panel.classList.remove('open'); if(overlay) overlay.style.display = 'none'; }
+function toggleCategorias() { const panel = document.getElementById('categoria-panel'); const overlay = document.getElementById('categoria-overlay'); if (!panel || !overlay) return; const isOpen = panel.classList.toggle('open'); overlay.style.display = isOpen ? 'block' : 'none'; }
+function closeCategorias() { const panel = document.getElementById('categoria-panel'); const overlay = document.getElementById('categoria-overlay'); if (panel) panel.classList.remove('open'); if (overlay) overlay.style.display = 'none'; }
 
 // --- SUGERENCIAS E INTERACCIONES ---
 function mostrarSugerencias(q) {
     let qLimpio = quitarAcentos(q); let terminos = qLimpio.split(' ').filter(t => t.length > 0).map(procesarTermino);
     let coincidencias = inventario.filter(p => {
-        if(p.StockNum <= 0) return false;
+        if (p.StockNum <= 0) return false;
         let textoCompleto = p.TextoBusquedaLimpio; let words = textoCompleto.split(' ');
         let coincide = terminos.every(term => { if (textoCompleto.includes(term)) return true; if (term.length >= 4) return words.some(w => levenshtein(term, w) <= (term.length >= 6 ? 2 : 1)); return false; });
-        if(coincide) { let nLimpio = quitarAcentos(p.Nombre); let wNombre = nLimpio.split(' '); p.TempScore = 0; terminos.forEach(t => { if(wNombre.includes(t)) p.TempScore += 50; else if(nLimpio.includes(t)) p.TempScore += 25; else p.TempScore += 10; }); } return coincide;
+        if (coincide) { let nLimpio = quitarAcentos(p.Nombre); let wNombre = nLimpio.split(' '); p.TempScore = 0; terminos.forEach(t => { if (wNombre.includes(t)) p.TempScore += 50; else if (nLimpio.includes(t)) p.TempScore += 25; else p.TempScore += 10; }); } return coincide;
     });
-    coincidencias.sort((a,b) => b.TempScore - a.TempScore); coincidencias = coincidencias.slice(0, 5);
+    coincidencias.sort((a, b) => b.TempScore - a.TempScore); coincidencias = coincidencias.slice(0, 5);
     const cont = document.getElementById('search-suggestions');
-    if(coincidencias.length === 0) { cerrarSugerencias(); aplicarFiltros(); return; }
+    if (coincidencias.length === 0) { cerrarSugerencias(); aplicarFiltros(); return; }
     cont.innerHTML = '';
     coincidencias.forEach(p => { let carpeta = getCategoriaFolder(p.Cat); const div = document.createElement('div'); div.className = 'suggestion-item'; div.innerHTML = `<img src="assets/img/${carpeta}/${p.codigo}/1.webp" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="0" onerror="imgFallbackFolder(this)"><span>${p.Nombre}</span>`; div.onclick = () => { document.getElementById('buscador').value = p.Nombre; cerrarSugerencias(); aplicarFiltros(); }; cont.appendChild(div); });
     cont.style.display = 'block'; aplicarFiltros();
 }
 function cerrarSugerencias() { document.getElementById('search-suggestions').style.display = 'none'; }
-document.addEventListener('click', (e) => { if(!e.target.closest('.search-container')) cerrarSugerencias(); });
-function toggleFav(codigo) { let index = favoritos.indexOf(codigo); if(index === -1) { favoritos.push(codigo); mostrarToast("Agregado a favoritos ❤️"); } else { favoritos.splice(index, 1); } localStorage.setItem('gc_favs', JSON.stringify(favoritos)); aplicarFiltros(); }
+document.addEventListener('click', (e) => { if (!e.target.closest('.search-container')) cerrarSugerencias(); });
+function toggleFav(codigo) { let index = favoritos.indexOf(codigo); if (index === -1) { favoritos.push(codigo); mostrarToast("Agregado a favoritos ❤️"); } else { favoritos.splice(index, 1); } localStorage.setItem('gc_favs', JSON.stringify(favoritos)); aplicarFiltros(); }
 function compartirProducto(nombre, precio) { const text = `¡Mira esta bebida! ${nombre} a solo $${precio}. ${window.location.href}`; if (navigator.share) { navigator.share({ title: 'Gran Catador', text, url: window.location.href }).catch(e => console.log(e)); return; } if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => mostrarToast("Texto copiado al portapapeles."), () => fallbackCopyText(text)); return; } fallbackCopyText(text); }
 function fallbackCopyText(text) { const textarea = document.createElement('textarea'); textarea.value = text; textarea.style.position = 'fixed'; textarea.style.opacity = '0'; document.body.appendChild(textarea); textarea.focus(); textarea.select(); try { document.execCommand('copy'); mostrarToast("Texto copiado al portapapeles."); } catch (e) { mostrarToast("No se pudo copiar al portapapeles."); } document.body.removeChild(textarea); }
 function compartirProductoB64(b64, p) { compartirProducto(decodificarNombre(b64), p); }
 
 // --- RENDERIZADO DE PRODUCTOS (Fase 5: Mejora de Rendimiento) ---
 function crearHTMLProducto(p) {
-    const isFav = favoritos.includes(p.codigo); 
-    const isAgotado = p.StockNum <= 0; 
+    const isFav = favoritos.includes(p.codigo);
+    const isAgotado = p.StockNum <= 0;
     const nombreB64 = codificarNombre(p.Nombre);
-    
+
     const esModoCaja = (modoVistaGlobal === 'caja');
     const precioUsdDin = esModoCaja ? p.PrecioCajaUsd : p.PrecioStr;
     const precioBsDin = esModoCaja ? p.PrecioCajaBsStr : p.PrecioBsStr;
     const precioNum = esModoCaja ? p.PrecioCajaNum : p.PrecioNum;
     const carpeta = getCategoriaFolder(p.Cat);
-    
+
     let badgeHTML = '';
     if (isAgotado) {
         badgeHTML = `<div class="product-badge badge-agotado">AGOTADO</div>`;
@@ -368,18 +463,18 @@ function crearHTMLProducto(p) {
 async function abrirDetalleProducto(codigo) {
     let p = inventario.find(x => x.codigo === codigo);
     if (!p) return;
-    
+
     const carpeta = getCategoriaFolder(p.Cat);
     const esModoCaja = (modoVistaGlobal === 'caja');
     const precioUsdDin = esModoCaja ? p.PrecioCajaUsd : p.PrecioStr;
     const precioBsDin = esModoCaja ? p.PrecioCajaBsStr : p.PrecioBsStr;
     const precioNum = esModoCaja ? p.PrecioCajaNum : p.PrecioNum;
     const nombreB64 = codificarNombre(p.Nombre);
-    
+
     document.getElementById('detalle-titulo').innerText = p.Nombre;
     document.getElementById('detalle-precio-usd').innerText = `$${precioUsdDin}`;
     document.getElementById('detalle-precio-bs').innerText = `${precioBsDin} Bs`;
-    
+
     let btnShare = document.getElementById('detalle-btn-share');
     if (btnShare) btnShare.onclick = () => compartirProducto(p.Nombre, precioUsdDin);
 
@@ -395,25 +490,25 @@ async function abrirDetalleProducto(codigo) {
             stockBadge.style.background = "rgba(37, 211, 102, 0.1)"; stockBadge.style.color = "#25D366";
         }
     }
-    
+
     let imgContainer = document.getElementById('detalle-img-container');
     let galeriasHTML = '';
     for (let i = 1; i <= 6; i++) {
         galeriasHTML += `<img loading="lazy" src="assets/img/${carpeta}/${p.codigo}/${i}.webp" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="${i}" data-attempts="0" onerror="imgFallbackFolder(this)" alt="Vista ${i}" style="scroll-snap-align: start; flex-shrink: 0; width: 100%; height: 100%; object-fit: contain; ${i > 1 ? 'display: none;' : ''}" onload="this.style.display='block'">`;
     }
     imgContainer.innerHTML = galeriasHTML;
-    
+
     let btnContainer = document.getElementById('detalle-btn-add');
     if (p.StockNum <= 0) {
         btnContainer.innerHTML = `<button class="btn-enviar" style="background: var(--color-border); color: var(--color-text-muted); cursor: not-allowed;" disabled>Agotado</button>`;
     } else {
         btnContainer.innerHTML = `<button class="btn-enviar" onclick="agregarAlCarritoB64('${nombreB64}', ${precioNum}, this, false, 'assets/img/${carpeta}/${p.codigo}/1.webp', ${esModoCaja}); document.getElementById('modal-producto').style.display='none';" style="background: var(--color-primary);"><i class="fa-solid fa-cart-shopping"></i> Agregar al carrito</button>`;
     }
-    
+
     let descContainer = document.getElementById('detalle-descripcion');
     descContainer.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando información...';
     document.getElementById('modal-producto').style.display = 'flex';
-    
+
     try {
         let res = await fetch(`assets/img/${carpeta}/${p.codigo}/desc.txt`);
         if (res.ok) { let text = await res.text(); descContainer.innerText = text; } else { descContainer.innerText = "Sin descripción adicional."; }
@@ -421,13 +516,13 @@ async function abrirDetalleProducto(codigo) {
 }
 
 function renderizarPagina() {
-    const cont = document.getElementById('lista-productos'); 
-    if (paginaActual === 1) cont.innerHTML = ''; 
-    
-    let inicio = (paginaActual - 1) * itemsPorPagina, fin = paginaActual * itemsPorPagina; 
+    const cont = document.getElementById('lista-productos');
+    if (paginaActual === 1) cont.innerHTML = '';
+
+    let inicio = (paginaActual - 1) * itemsPorPagina, fin = paginaActual * itemsPorPagina;
     let pedazo = productosFiltradosGlobal.slice(inicio, fin);
-    
-    if (productosFiltradosGlobal.length === 0) { 
+
+    if (productosFiltradosGlobal.length === 0) {
         if (paginaActual === 1) {
             cont.innerHTML = `
                 <div style="grid-column: span 2; text-align: center; padding: 40px 20px; color: var(--texto-claro);">
@@ -435,23 +530,23 @@ function renderizarPagina() {
                     <h3 style="color: var(--texto-oscuro); font-size: 16px; font-weight: bold;">¿Aún no tienes sed?</h3>
                     <p style="font-size: 13px; margin-top: 5px;">No encontramos botellas con esa descripción.</p>
                     <button onclick="irInicio()" class="cat-btn active" style="margin: 20px auto 0 auto; padding: 10px 20px;">Ver todo el catálogo</button>
-                </div>`; 
-            document.getElementById('btn-cargar-mas').style.display = 'none'; 
+                </div>`;
+            document.getElementById('btn-cargar-mas').style.display = 'none';
         }
-        return; 
+        return;
     }
-    
+
     const html = pedazo.map(crearHTMLProducto).join('');
     cont.insertAdjacentHTML('beforeend', html);
-    
+
     if (fin < productosFiltradosGlobal.length) {
-        document.getElementById('btn-cargar-mas').style.display = 'block'; 
+        document.getElementById('btn-cargar-mas').style.display = 'block';
     } else {
         document.getElementById('btn-cargar-mas').style.display = 'none';
     }
 }
 
-function cargarMasProductos() { 
-    paginaActual++; 
-    renderizarPagina(); 
+function cargarMasProductos() {
+    paginaActual++;
+    renderizarPagina();
 }

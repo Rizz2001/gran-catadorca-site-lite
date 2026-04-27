@@ -14,6 +14,16 @@
 
     .header-right {
         order: 2;
+        display: flex;
+        gap: 5px;
+        /* Reducimos el espacio entre los iconos */
+    }
+
+    /* Hacemos los iconos ligeramente más pequeños en móviles */
+    .icon-btn {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 16px !important;
     }
 
     .header-center {

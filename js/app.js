@@ -7,8 +7,6 @@ let productosFiltradosGlobal = []; let itemsPorPagina = 30; let paginaActual = 1
 let appSettings = { useApi: true, apiType: 'smartventas' };
 
 let modoVistaGlobal = 'unidad';
-let subcategoriasLicores = {};
-let mapaCodToSubcategoria = {};
 let subcategoriaActual = null;
 
 if (localStorage.getItem('gc_dark') === 'true') document.body.classList.add('dark-mode');
@@ -248,12 +246,23 @@ async function cargarInventarioDesdeAPI() {
             let precioUsd = parseFloat(item.precio || item.Precio || item.precio1 || item.Precio1 || 0);
             let stock = parseFloat(item.existencia || item.Existencia || item.stock || item.Stock || 0);
             let nombre = item.nombre || item.Nombre || item.descripcion || item.Descripcion || "Producto sin nombre";
-            let categoria = item.grupo || item.Grupo || item.categoria || "Otros";
+
+            // Extraer códigos exactos de la API
+            let codGrupo = (item.CodGrupo || item.grupo || item.Grupo || item.categoria || item.id_grupo || item.cod_grupo || "Otros").toString().trim();
+            let codSubgrupo = (item.CodSubgrupo || item.subgrupo || item.Subgrupo || item.subcategoria || item.Subcategoria || item.sub_grupo || item.id_subgrupo || item.cod_subgrupo || "").toString().trim();
+
+            // Traducir el código del grupo al Nombre Real (cruzándolo con gruposinv)
+            let matchGrupo = appState.gruposInventario.find(g => (g.CodGrupo || g.codigo || g.id || g.Codigo || g.Id || g.grupo || g.Grupo || "").toString().trim() === codGrupo);
+            let nombreGrupo = matchGrupo ? (matchGrupo.Nombre || matchGrupo.nombre || matchGrupo.descripcion || matchGrupo.Descripcion || matchGrupo.NombreGrupo || matchGrupo.DescGrupo) : codGrupo;
+            let nombreSubgrupo = item.desc_subgrupo || item.Desc_subgrupo || item.nombre_subgrupo || item.desc_sub_grupo || codSubgrupo;
 
             return {
                 codigo: item.codigo || item.Codigo || item.id || item.Id || "",
                 Nombre: nombre,
-                Cat: limpiarCategoria(categoria),
+                CatId: codGrupo,
+                Cat: limpiarCategoria(nombreGrupo),
+                SubCatId: codSubgrupo,
+                SubCat: limpiarCategoria(nombreSubgrupo),
                 PrecioStr: precioUsd.toFixed(2),
                 PrecioNum: precioUsd,
                 PrecioBsStr: (precioUsd * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
@@ -262,11 +271,15 @@ async function cargarInventarioDesdeAPI() {
                 PrecioCajaBsStr: ((precioUsd * 12) * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
                 StockNum: stock,
                 StockStr: stock > 0 ? stock.toString() : "0",
-                TextoBusquedaLimpio: quitarAcentos(nombre) + " " + quitarAcentos(categoria)
+                TextoBusquedaLimpio: quitarAcentos(nombre) + " " + quitarAcentos(nombreGrupo) + " " + quitarAcentos(nombreSubgrupo)
             };
         }).filter(p => p.PrecioNum > 0);
 
         appState.inventario = inventario;
+
+        // DEBUG: Imprimir los primeros 5 productos mapeados para verificar IDs
+        console.log("🕵️‍♂️ Muestra de productos mapeados (para debug):", JSON.parse(JSON.stringify(inventario.slice(0, 5))));
+
         if (typeof mostrarToast === 'function') mostrarToast(`✅ API SmartVentas: ${grupos.length} Grupos y ${articulos.length} Productos sincronizados.`);
     }
 }
@@ -292,15 +305,17 @@ function aplicarFiltros() {
     if (categoriaActual === 'Favoritos') {
         resultado = resultado.filter(p => favoritos.includes(p.codigo));
     } else if (categoriaActual !== 'Todos') {
-        resultado = resultado.filter(p => p.Cat === categoriaActual);
+        resultado = resultado.filter(p => p.Cat === limpiarCategoria(categoriaActual) || p.CatId === categoriaActual);
         console.log(`🔍 Filtro ${categoriaActual}: ${resultado.length} productos`);
     }
 
     // Filtrar POR SUBCATEGORÍA si está activa
-    if (subcategoriaActual && categoriaActual === 'LICORES') {
+    if (subcategoriaActual && categoriaActual !== 'Todos' && categoriaActual !== 'Favoritos') {
         const antes = resultado.length;
-        resultado = resultado.filter(p => p.SubCat === subcategoriaActual);
-        console.log(`📦 Filtro subcategoría ${subcategoriaActual}: ${antes} → ${resultado.length} productos`);
+        resultado = resultado.filter(p => p.SubCat === limpiarCategoria(subcategoriaActual) || p.SubCatId === subcategoriaActual);
+        console.log(`📦 Filtro de subcategoría aplicado. Buscando por: "${subcategoriaActual}"`);
+        console.log(`   - Productos antes del filtro: ${antes}`);
+        console.log(`   - Productos después del filtro: ${resultado.length}`);
     }
 
     if (q !== '') {

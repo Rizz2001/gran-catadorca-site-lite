@@ -227,3 +227,41 @@ textarea {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
     /* Sombra elegante al seleccionar */
 }
+
+/* --- JERARQUÍA VISUAL: SUBCATEGORÍAS --- */
+#subcategoria-section-main {
+    border-top: 1px dashed var(--borde-color, #ddd);
+    padding-top: 12px;
+    margin-top: -5px;
+}
+
+.horizontal-filters .subcat-btn {
+    flex: 0 0 auto !important;
+    min-width: max-content !important;
+    width: auto !important;
+    border-radius: 8px !important;
+    /* Más cuadrados, menos de "píldora" */
+    padding: 6px 14px !important;
+    /* Más pequeños */
+    background: transparent;
+    border: 1px solid var(--borde-color, #ddd) !important;
+    color: var(--color-text-muted, #666);
+    font-weight: 500;
+    font-size: 12.5px;
+    transition: 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.horizontal-filters .subcat-btn.active {
+    background: rgba(30, 58, 138, 0.08) !important;
+    /* Un fondo muy suave */
+    color: var(--color-primary, #1E3A8A) !important;
+    border-color: var(--color-primary, #1E3A8A) !important;
+    font-weight: 700;
+    box-shadow: none;
+    /* Sin sombra para no recargar la vista */
+}

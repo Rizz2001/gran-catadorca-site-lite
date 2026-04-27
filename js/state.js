@@ -4,12 +4,7 @@
 const appState = {
     // Datos de Inventario
     inventario: [],
-    gruposInventario: [],
     productosFiltrados: [],
-    subcategoriasLicores: {},
-    mapaCodToSubcategoria: {},
-    codigosRecomendados: [],
-    siempreDisponibles: [],
 
     // Datos del Usuario
     carrito: JSON.parse(localStorage.getItem('gc_cart')) || {},
