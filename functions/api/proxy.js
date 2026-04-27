@@ -12,6 +12,11 @@ export async function onRequest(context) {
     }
 
     try {
+        // Determinar qué endpoint quiere consultar la app (gruposinv o articulos)
+        const requestUrl = new URL(context.request.url);
+        const endpoint = requestUrl.searchParams.get("endpoint") || "gruposinv";
+        const urlFoxdata = `https://apismartventas.foxdata.app/api/v1/syn/${endpoint}`;
+
         // 2. OBTENER UN TOKEN FRESCO (Para que nunca expire)
         const authUrl = "https://auth.foxdata.app/connect/token";
         const credenciales = new URLSearchParams({
@@ -31,8 +36,7 @@ export async function onRequest(context) {
         const tokenFresco = tokenData.access_token; // Aquí Cloudflare atrapa tu token automáticamente
 
         // 3. CONSULTAR EL INVENTARIO CON EL TOKEN FRESCO
-        const urlFerozo = "https://apismartventas.foxdata.app/api/v1/syn/gruposinv";
-        const inventarioResponse = await fetch(urlFerozo, {
+        const apiResponse = await fetch(urlFoxdata, {
             method: 'GET',
             headers: {
                 // Aquí se inyecta el token automáticamente
@@ -41,10 +45,10 @@ export async function onRequest(context) {
             }
         });
 
-        const inventarioData = await inventarioResponse.json();
+        const responseData = await apiResponse.json();
 
         // 4. DEVOLVER LOS DATOS A TU PÁGINA WEB (Con la puerta CORS abierta)
-        return new Response(JSON.stringify(inventarioData), {
+        return new Response(JSON.stringify(responseData), {
             headers: {
                 'Content-Type': 'application/json',
                 ...corsHeaders

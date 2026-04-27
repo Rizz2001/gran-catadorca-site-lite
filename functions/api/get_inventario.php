@@ -1,16 +1,16 @@
 <?php
 /**
  * get_inventario.php - Bridge entre MySQL y el catálogo (Frontend)
- * Este archivo debe estar en una carpeta llamada 'api' en la raíz.
+ * Este archivo debe estar en una carpeta llamada 'functions/api' en la raíz.
  */
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *'); // Ajustar según sea necesario por seguridad
 
-// 1. Leer las credenciales desde el archivo JSON
-$settingsPath = '../data/config/settings.json';
+// 1. Leer las credenciales desde el archivo JSON (Ruta acomodada a ../../)
+$settingsPath = '../../data/config/settings.json';
 if (!file_exists($settingsPath)) {
-    echo json_encode(["error" => "No se encontró el archivo de configuración."]);
+    echo json_encode(["error" => "No se encontró el archivo de configuración en $settingsPath"]);
     exit;
 }
 
@@ -51,7 +51,6 @@ if ($task === 'config') {
     echo json_encode($data);
 } else {
     // Cargar inventario
-    // Ajusta los nombres de las columnas a tu tabla de MySQL
     $stmt = $pdo->query("SELECT codigo, nombre, categoria, precio_usd, precio_bs, precio_caja_usd, precio_caja_bs, stock FROM inventario");
     $data = $stmt->fetchAll();
     echo json_encode($data);

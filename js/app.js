@@ -237,35 +237,62 @@ function iniciarAutoActualizacion() {
 }
 
 async function cargarInventarioDesdeAPI() {
-    // En tu entorno local de Cloudflare (o en la URL de GitHub/Pages), llamamos a la ruta /api/proxy
-    const respuesta = await fetch('https://gran-catador.pages.dev/api/proxy');
+    // Usamos ruta relativa si está publicado, y ruta absoluta si estás programando en local (Live Server)
+    const proxyBaseUrl = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')
+        ? 'https://gran-catador.pages.dev/api/proxy'
+        : '/api/proxy';
 
-    if (!respuesta.ok) {
-        throw new Error(`Error en el servidor: ${respuesta.status}`);
-    }
+    console.log("📡 Consultando API mediante Proxy Cloudflare...");
 
-    const dataRaw = await respuesta.json();
-    console.log("¡Datos obtenidos con éxito burlando el CORS!", dataRaw);
+    // --- 1. DESCARGAR GRUPOS ---
+    const resGrupos = await fetch(`${proxyBaseUrl}?endpoint=gruposinv`);
+    if (!resGrupos.ok) throw new Error(`Error servidor grupos: ${resGrupos.status}`);
+    const dataGrupos = await resGrupos.json();
 
-    // Intentamos extraer el array de grupos, ya que a veces viene envuelto en .data, .grupos, etc.
-    let grupos = [];
-    if (Array.isArray(dataRaw)) {
-        grupos = dataRaw;
-    } else if (dataRaw.data && Array.isArray(dataRaw.data)) {
-        grupos = dataRaw.data;
-    } else if (dataRaw.grupos && Array.isArray(dataRaw.grupos)) {
-        grupos = dataRaw.grupos;
-    } else if (dataRaw.result && Array.isArray(dataRaw.result)) {
-        grupos = dataRaw.result;
-    }
+    let grupos = Array.isArray(dataGrupos) ? dataGrupos : (dataGrupos.data || dataGrupos.grupos || dataGrupos.result || []);
 
     if (grupos.length > 0) {
         appState.gruposInventario = grupos;
         console.log("📂 Grupos procesados correctamente:", grupos.length);
-        if (typeof mostrarToast === 'function') mostrarToast("✅ API SmartVentas: " + grupos.length + " grupos recibidos.");
     } else {
-        console.warn("⚠️ La API respondió pero no se encontró un listado de grupos válido.", dataRaw);
+        console.warn("⚠️ La API respondió pero no se encontró un listado de grupos válido.", dataGrupos);
         if (typeof mostrarToast === 'function') mostrarToast("⚠️ API conectada, pero no se encontraron grupos.");
+    }
+
+    // --- 2. DESCARGAR PRODUCTOS (ARTÍCULOS) ---
+    const resArticulos = await fetch(`${proxyBaseUrl}?endpoint=articulos`);
+    if (!resArticulos.ok) throw new Error(`Error servidor artículos: ${resArticulos.status}`);
+    const dataArticulos = await resArticulos.json();
+
+    let articulos = Array.isArray(dataArticulos) ? dataArticulos : (dataArticulos.data || dataArticulos.articulos || dataArticulos.result || []);
+
+    if (articulos.length > 0) {
+        console.log(`📦 ${articulos.length} artículos recibidos. Mapeando al catálogo...`);
+
+        inventario = articulos.map(item => {
+            let precioUsd = parseFloat(item.precio || item.Precio || item.precio1 || item.Precio1 || 0);
+            let stock = parseFloat(item.existencia || item.Existencia || item.stock || item.Stock || 0);
+            let nombre = item.nombre || item.Nombre || item.descripcion || item.Descripcion || "Producto sin nombre";
+            let categoria = item.grupo || item.Grupo || item.categoria || "Otros";
+
+            return {
+                codigo: item.codigo || item.Codigo || item.id || item.Id || "",
+                Nombre: nombre,
+                Cat: limpiarCategoria(categoria),
+                PrecioStr: precioUsd.toFixed(2),
+                PrecioNum: precioUsd,
+                PrecioBsStr: (precioUsd * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
+                PrecioCajaUsd: (precioUsd * 12).toFixed(2),
+                PrecioCajaNum: precioUsd * 12,
+                PrecioCajaBsStr: ((precioUsd * 12) * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
+                StockNum: stock,
+                StockStr: stock > 0 ? stock.toString() : "0",
+                TextoBusquedaLimpio: quitarAcentos(nombre) + " " + quitarAcentos(categoria)
+            };
+        }).filter(p => p.PrecioNum > 0);
+
+        appState.inventario = inventario;
+        if (typeof mostrarToast === 'function') mostrarToast(`✅ API SmartVentas: ${grupos.length} Grupos y ${articulos.length} Productos sincronizados.`);
     }
 }
 
