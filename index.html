@@ -27,6 +27,13 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
+    <style>
+        /* Evita que el menú inferior (bottom-nav) tape el footer o el botón de "Cargar más" */
+        body {
+            padding-bottom: 75px !important;
+        }
+    </style>
+
 </head>
 
 <body>
@@ -46,7 +53,8 @@
         </div>
     </div>
 
-    <header class="site-header" style="position: sticky; top: 0; z-index: 2000;">
+    <!-- Le quitamos el sticky a TODO el header para poder separar qué se queda y qué se va -->
+    <header class="site-header">
         <!-- Nivel 1: Barra Superior (Promo) -->
         <style>
             .marquee-container {
@@ -81,105 +89,111 @@
             </div>
         </div>
 
-        <!-- Nivel 2: Barra Principal (Buscador, Logo, Acciones) -->
-        <div class="header-main-bar">
-            <div class="container header-main-container">
+        <!-- Envolvemos en un contenedor Sticky SOLO lo esencial (Buscador, Logo, Tasas y Nav) -->
+        <div class="sticky-header-content"
+            style="position: sticky; top: 0; z-index: 2000; background: var(--color-bg, #0B132B); box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            <!-- Nivel 2: Barra Principal (Buscador, Logo, Acciones) -->
+            <div class="header-main-bar">
+                <div class="container header-main-container">
 
-                <!-- Izquierda: Menú (Móvil), Logo y Ubicación -->
-                <div class="header-left">
-                    <button class="icon-btn mobile-only" onclick="history.back()" aria-label="Atrás"
-                        style="background: transparent;">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                    <div class="header-brand" onclick="irInicio()">
-                        <img src="logo.png" alt="Logo Gran Catador"
-                            style="height: 32px; width: 32px; border-radius: 4px; object-fit: contain;">
-                        <span class="brand-text">Gran Catador</span>
-                    </div>
-                    <div class="header-location desktop-only">
-                        <i class="fa-solid fa-location-dot location-icon"></i>
-                        <div class="location-text">
-                            <span class="location-label">Delivery a</span>
-                            <span class="location-value">Barinas, VE</span>
+                    <!-- Izquierda: Menú (Móvil), Logo y Ubicación -->
+                    <div class="header-left">
+                        <button class="icon-btn mobile-only" onclick="history.back()" aria-label="Atrás"
+                            style="background: transparent;">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <div class="header-brand" onclick="irInicio()">
+                            <img src="logo.png" alt="Logo Gran Catador"
+                                style="height: 32px; width: 32px; border-radius: 4px; object-fit: contain;">
+                            <span class="brand-text">Gran Catador</span>
+                        </div>
+                        <div class="header-location desktop-only">
+                            <i class="fa-solid fa-location-dot location-icon"></i>
+                            <div class="location-text">
+                                <span class="location-label">Delivery a</span>
+                                <span class="location-value">Barinas, VE</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Centro: Barra de Búsqueda Principal (Píldora) -->
-                <div class="header-center">
-                    <div class="search-pill">
-                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                        <!-- Conectado al ID "buscador" para sincronizar sugerencias automáticas -->
-                        <input type="text" id="buscador" placeholder="Buscar productos, grupos o marcas..."
-                            onkeyup="debounceBusqueda(event)" autocomplete="off">
-                        <i class="fa-solid fa-circle-xmark clear-search-icon" id="clear-search"
-                            onclick="limpiarBuscador()" aria-label="Limpiar búsqueda"></i>
-                        <div id="search-suggestions"></div>
+                    <!-- Centro: Barra de Búsqueda Principal (Píldora) -->
+                    <div class="header-center">
+                        <div class="search-pill">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <!-- Conectado al ID "buscador" para sincronizar sugerencias automáticas -->
+                            <input type="text" id="buscador" placeholder="Buscar productos, grupos o marcas..."
+                                onkeyup="debounceBusqueda(event)" autocomplete="off">
+                            <i class="fa-solid fa-circle-xmark clear-search-icon" id="clear-search"
+                                onclick="limpiarBuscador()" aria-label="Limpiar búsqueda"></i>
+                            <div id="search-suggestions"></div>
+                        </div>
+                    </div>
+
+                    <!-- Derecha: Botones Circulares -->
+                    <div class="header-right">
+                        <button class="icon-btn desktop-only" aria-label="Notificaciones">
+                            <i class="fa-regular fa-bell"></i>
+                        </button>
+                        <button class="icon-btn" onclick="abrirCarrito()" aria-label="Carrito">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                            <span class="badge" id="cart-count">0</span>
+                        </button>
+                        <button class="icon-btn" onclick="abrirPerfil()" aria-label="Mi Perfil">
+                            <i class="fa-regular fa-user"></i>
+                        </button>
                     </div>
                 </div>
-
-                <!-- Derecha: Botones Circulares -->
-                <div class="header-right">
-                    <button class="icon-btn desktop-only" aria-label="Notificaciones">
-                        <i class="fa-regular fa-bell"></i>
-                    </button>
-                    <button class="icon-btn" onclick="abrirCarrito()" aria-label="Carrito">
-                        <i class="fa-solid fa-cart-shopping"></i>
-                        <span class="badge" id="cart-count">0</span>
-                    </button>
-                    <button class="icon-btn" onclick="abrirPerfil()" aria-label="Mi Perfil">
-                        <i class="fa-regular fa-user"></i>
-                    </button>
-                </div>
             </div>
-        </div>
-        <!-- Nivel 2.5: Tasas Móvil -->
-        <div class="mobile-only"
-            style="background: rgba(245, 158, 11, 0.05); border-bottom: 1px solid var(--color-border); padding: 8px 0; justify-content: center; color: var(--dorado); font-size: 12px; font-weight: 600; gap: 15px;">
-            <span style="display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-dollar-sign"></i> <span
-                    id="tasaValorMobile">...</span></span>
-            <span style="opacity: 0.3; color: var(--color-text);">|</span>
-            <span style="display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-euro-sign"></i> <span
-                    id="tasaEuroValorMobile">...</span></span>
-        </div>
+            <!-- Nivel 2.5: Tasas Móvil -->
+            <div class="mobile-only"
+                style="background: rgba(245, 158, 11, 0.05); border-bottom: 1px solid var(--color-border); padding: 8px 0; justify-content: center; color: var(--dorado); font-size: 12px; font-weight: 600; gap: 15px;">
+                <span style="display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-dollar-sign"></i> <span
+                        id="tasaValorMobile">...</span></span>
+                <span style="opacity: 0.3; color: var(--color-text);">|</span>
+                <span style="display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-euro-sign"></i> <span
+                        id="tasaEuroValorMobile">...</span></span>
+            </div>
 
-        <!-- Nivel 3: Barra de Navegación Inferior (Solo Escritorio) -->
-        <div class="header-nav-bar desktop-only">
-            <div class="container header-nav-container">
-                <div class="nav-links-left">
-                    <a href="#" class="nav-link active" onclick="irInicio()">Inicio</a>
-                    <a href="#" class="nav-link" onclick="filtrarCategoria('LICORES', null)">Licores</a>
-                    <a href="#" class="nav-link"
-                        onclick="irInicio(); document.getElementById('buscador').value='Cerveza'; aplicarFiltros();">Cervezas</a>
-                    <a href="#" class="nav-link"
-                        onclick="irInicio(); document.getElementById('buscador').value='Vino'; aplicarFiltros();">Vinos</a>
-                    <a href="#" class="nav-link"
-                        onclick="irInicio(); document.getElementById('buscador').value='Ron'; aplicarFiltros();">Ron</a>
-                    <a href="#" class="nav-link"
-                        onclick="irInicio(); document.getElementById('buscador').value='Whisky'; aplicarFiltros();">Whisky</a>
-                    <a href="#" class="nav-link"
-                        onclick="irInicio(); document.getElementById('buscador').value='Refresco'; aplicarFiltros();">Refrescos</a>
-                    <a href="#" class="nav-link"
-                        onclick="irInicio(); document.getElementById('buscador').value='Snack'; aplicarFiltros();">Snacks</a>
-                </div>
-                <div class="nav-links-right" style="display: flex; align-items: center; gap: 15px;">
-                    <div style="color: var(--dorado); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(212, 175, 55, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.2);"
-                        title="Tasas Oficiales BCV">
-                        <span style="display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-dollar-sign"></i>
-                            <span id="tasaValor">...</span></span>
-                        <span style="opacity: 0.3;">|</span>
-                        <span style="display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-euro-sign"></i>
-                            <span id="tasaEuroValor">...</span></span>
+            <!-- Nivel 3: Barra de Navegación Inferior (Solo Escritorio) -->
+            <div class="header-nav-bar desktop-only">
+                <div class="container header-nav-container">
+                    <div class="nav-links-left">
+                        <a href="#" class="nav-link active" onclick="irInicio()">Inicio</a>
+                        <a href="#" class="nav-link" onclick="filtrarCategoria('LICORES', null)">Licores</a>
+                        <a href="#" class="nav-link"
+                            onclick="irInicio(); document.getElementById('buscador').value='Cerveza'; aplicarFiltros();">Cervezas</a>
+                        <a href="#" class="nav-link"
+                            onclick="irInicio(); document.getElementById('buscador').value='Vino'; aplicarFiltros();">Vinos</a>
+                        <a href="#" class="nav-link"
+                            onclick="irInicio(); document.getElementById('buscador').value='Ron'; aplicarFiltros();">Ron</a>
+                        <a href="#" class="nav-link"
+                            onclick="irInicio(); document.getElementById('buscador').value='Whisky'; aplicarFiltros();">Whisky</a>
+                        <a href="#" class="nav-link"
+                            onclick="irInicio(); document.getElementById('buscador').value='Refresco'; aplicarFiltros();">Refrescos</a>
+                        <a href="#" class="nav-link"
+                            onclick="irInicio(); document.getElementById('buscador').value='Snack'; aplicarFiltros();">Snacks</a>
                     </div>
-                    <button class="btn-support" onclick="abrirSoporteWhatsApp()">
-                        <i class="fa-brands fa-whatsapp"></i> Soporte
-                    </button>
+                    <div class="nav-links-right" style="display: flex; align-items: center; gap: 15px;">
+                        <div style="color: var(--dorado); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(212, 175, 55, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.2);"
+                            title="Tasas Oficiales BCV">
+                            <span style="display:flex; align-items:center; gap:4px;"><i
+                                    class="fa-solid fa-dollar-sign"></i>
+                                <span id="tasaValor">...</span></span>
+                            <span style="opacity: 0.3;">|</span>
+                            <span style="display:flex; align-items:center; gap:4px;"><i
+                                    class="fa-solid fa-euro-sign"></i>
+                                <span id="tasaEuroValor">...</span></span>
+                        </div>
+                        <button class="btn-support" onclick="abrirSoporteWhatsApp()">
+                            <i class="fa-brands fa-whatsapp"></i> Soporte
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Elementos JS ocultos temporalmente -->
-        <span id="store-status" style="display:none;"></span>
+            <!-- Elementos JS ocultos temporalmente -->
+            <span id="store-status" style="display:none;"></span>
+        </div>
     </header>
 
     <div id="alert-actualizacion" class="container"
@@ -196,10 +210,19 @@
     <div class="container tools-container">
         <h2 class="section-title">Todos los productos</h2>
 
+        <!-- NUEVO: Menú Deslizable de Grupos -->
+        <div class="horizontal-scroll-wrapper" style="margin-bottom: 10px; width: 100%; overflow: hidden;">
+            <div class="categorias-scroll horizontal-filters" id="contenedorCategorias"></div>
+        </div>
+
+        <!-- NUEVO: Menú Deslizable de Subcategorías (Oculto por defecto) -->
+        <div class="horizontal-scroll-wrapper" id="subcategoria-section-main"
+            style="display:none; margin-bottom: 15px; width: 100%; overflow: hidden;">
+            <div class="categorias-scroll horizontal-filters" id="contenedorSubcategorias"></div>
+        </div>
+
         <div class="filters-row-container">
             <div class="filters-row">
-                <button class="filter-chip active" onclick="toggleCategorias()">Todos los Grupos <i
-                        class="fa-solid fa-chevron-down"></i></button>
                 <label class="filter-chip chk-agotados" style="cursor:pointer;">
                     <input type="checkbox" id="chkAgotados" onchange="aplicarFiltros()"
                         style="accent-color:var(--color-primary);"> Ver Agotados
@@ -217,26 +240,6 @@
         </div>
     </div>
 
-    <div class="categoria-panel" id="categoria-panel">
-        <div class="categoria-panel-header">
-            <span>Menú de Grupos</span>
-            <button class="close-categories" onclick="closeCategorias()" aria-label="Cerrar menú de categorías"><i
-                    class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-        </div>
-
-        <!-- Categorías Principales -->
-        <div class="categoria-section">
-            <div class="categoria-label">GRUPOS</div>
-            <div class="categorias-scroll" id="contenedorCategorias"></div>
-        </div>
-
-        <!-- Subcategorías (solo LICORES) -->
-        <div class="subcategoria-section" id="subcategoria-section-main" style="display:none;">
-            <div class="categoria-label">TIPOS DE LICORES</div>
-            <div class="categorias-scroll" id="contenedorSubcategorias"></div>
-        </div>
-    </div>
-    <div class="categoria-overlay" id="categoria-overlay" onclick="closeCategorias()"></div>
 
     <div class="productos-grid" id="lista-productos">
         <div class="loader-container">

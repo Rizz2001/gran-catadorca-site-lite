@@ -237,10 +237,11 @@ function iniciarAutoActualizacion() {
 }
 
 async function cargarInventarioDesdeAPI() {
-    // Usamos ruta relativa si está publicado, y ruta absoluta si estás programando en local (Live Server)
-    const proxyBaseUrl = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')
-        ? 'https://gran-catador.pages.dev/api/proxy'
-        : '/api/proxy';
+    // Ruta inteligente: Si la página está alojada en Cloudflare usa ruta relativa, 
+    // de lo contrario (Localhost, GitHub Pages, Hostinger) usa la ruta absoluta.
+    const proxyBaseUrl = window.location.hostname.includes('pages.dev')
+        ? '/api/proxy'
+        : 'https://gran-catador.pages.dev/api/proxy';
 
     console.log("📡 Consultando API mediante Proxy Cloudflare...");
 

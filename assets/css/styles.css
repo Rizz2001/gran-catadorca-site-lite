@@ -3,7 +3,12 @@ html {
     scroll-behavior: smooth;
 }
 
-button, a, i, input, select, textarea {
+button,
+a,
+i,
+input,
+select,
+textarea {
     transition: all 0.2s ease;
 }
 
@@ -17,15 +22,18 @@ button, a, i, input, select, textarea {
     width: 6px;
     height: 6px;
 }
+
 ::-webkit-scrollbar-track {
-    background: rgba(0,0,0,0.05); 
+    background: rgba(0, 0, 0, 0.05);
 }
+
 ::-webkit-scrollbar-thumb {
-    background: var(--color-primary, #004d40); 
+    background: var(--color-primary, #004d40);
     border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--dorado, #ffd700); 
+    background: var(--dorado, #ffd700);
 }
 
 /* --- NUEVO FOOTER --- */
@@ -161,4 +169,44 @@ button, a, i, input, select, textarea {
     padding: 20px;
     font-size: 12px;
     color: #bbb;
+}
+
+/* --- FILTROS HORIZONTALES (GRUPOS) --- */
+.horizontal-filters {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    padding-bottom: 5px;
+    /* Espacio para que no se corte visualmente */
+    scrollbar-width: none;
+    /* Oculta scroll en Firefox */
+    -ms-overflow-style: none;
+    /* Oculta scroll en IE/Edge */
+    white-space: nowrap;
+}
+
+.horizontal-filters::-webkit-scrollbar {
+    display: none;
+    /* Oculta scroll en Chrome/Safari/Webkit */
+}
+
+/* Convertir los viejos botones en píldoras (Sobreescribe responsive.css) */
+.horizontal-filters .cat-btn {
+    flex: 0 0 auto !important;
+    min-width: max-content !important;
+    width: auto !important;
+    border-radius: 20px !important;
+    padding: 8px 16px !important;
+    background: var(--item-bg, #fff);
+    border: 1px solid var(--borde-color, #ddd) !important;
+    color: var(--color-text, #333);
+    font-weight: 600;
+    font-size: 13px;
+    transition: 0.2s ease;
+}
+
+.horizontal-filters .cat-btn.active {
+    background: var(--color-primary) !important;
+    color: #fff !important;
+    border-color: var(--color-primary) !important;
 }
