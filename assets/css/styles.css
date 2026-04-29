@@ -171,6 +171,42 @@ textarea {
     color: #bbb;
 }
 
+/* Ajuste para el contenedor de herramientas (filtros, etc.) */
+.tools-container {
+    padding-top: 0 !important;
+}
+
+/* --- CONTENEDOR DE GRUPOS DESTACADO --- */
+.categorias-wrapper-unified {
+    background-color: var(--color-card, #ffffff);
+    border: 1px solid var(--color-border, #E5E7EB);
+    border-radius: var(--radius-md, 12px);
+    padding: 5px 0 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.categorias-wrapper-unified .scroll-container-wrapper {
+    margin-bottom: 0 !important;
+}
+
+.dark-mode .categorias-wrapper-unified {
+    background-color: #1F2937;
+    border-color: #374151;
+}
+
+#contenedorCategorias {
+    background-color: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 5px 15px !important;
+    margin: 0 !important;
+}
+
 /* --- FILTROS HORIZONTALES (GRUPOS) --- */
 .horizontal-filters {
     display: flex !important;
@@ -178,8 +214,7 @@ textarea {
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
     gap: 12px;
-    padding: 5px 5px 15px 5px;
-    /* Espacio extra para que no se corte la sombra */
+    padding: 10px 5px;
     scrollbar-width: none;
     -ms-overflow-style: none;
     white-space: nowrap !important;
@@ -234,9 +269,14 @@ textarea {
 
 /* --- JERARQUÍA VISUAL: SUBCATEGORÍAS --- */
 #subcategoria-section-main {
-    border-top: 1px dashed var(--borde-color, #ddd);
-    padding-top: 12px;
-    margin-top: -5px;
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+}
+
+#contenedorSubcategorias {
+    padding: 5px 15px 5px 15px !important;
+    margin: 0 !important;
 }
 
 .horizontal-filters .subcat-btn {
@@ -275,8 +315,7 @@ textarea {
 .scroll-arrow {
     position: absolute;
     top: 50%;
-    transform: translateY(calc(-50% - 5px));
-    /* Ajuste fino por el padding inferior */
+    transform: translateY(-50%);
     width: 32px;
     height: 32px;
     background: var(--item-bg, #fff);
@@ -297,11 +336,11 @@ textarea {
 }
 
 .left-arrow {
-    left: -15px;
+    left: -16px;
 }
 
 .right-arrow {
-    right: -15px;
+    right: -16px;
 }
 
 /* Ocultar en dispositivos móviles y tablets pequeñas */
@@ -309,6 +348,27 @@ textarea {
     .scroll-arrow {
         display: none !important;
     }
+}
+
+/* --- FADE GRADIENT (MÁSCARA DE SCROLL) --- */
+.horizontal-scroll-wrapper {
+    -webkit-mask-image: linear-gradient(to right, black, black);
+    mask-image: linear-gradient(to right, black, black);
+}
+
+.horizontal-scroll-wrapper.is-scrollable-left.is-scrollable-right {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 30px, black calc(100% - 30px), transparent);
+    mask-image: linear-gradient(to right, transparent, black 30px, black calc(100% - 30px), transparent);
+}
+
+.horizontal-scroll-wrapper.is-scrollable-left:not(.is-scrollable-right) {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 30px);
+    mask-image: linear-gradient(to right, transparent, black 30px);
+}
+
+.horizontal-scroll-wrapper.is-scrollable-right:not(.is-scrollable-left) {
+    -webkit-mask-image: linear-gradient(to left, transparent, black 30px);
+    mask-image: linear-gradient(to left, transparent, black 30px);
 }
 
 /* --- SKELETON LOADER PARA GRUPOS --- */
@@ -351,4 +411,12 @@ textarea {
 
 .dark-mode .skeleton-chip {
     animation: skeleton-pulse-dark 1.5s infinite ease-in-out;
+}
+
+/* --- FULL-WIDTH EN PANTALLAS GRANDES --- */
+@media (min-width: 1440px) {
+    .footer-container {
+        max-width: none;
+        padding: 0 40px 40px;
+    }
 }
