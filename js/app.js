@@ -474,8 +474,8 @@ function debounceBusqueda(event) {
 
 function aplicarFiltros() {
     let q = quitarAcentos((document.getElementById('buscador')?.value || '').trim());
-    let sortOption = document.getElementById('ordenarSelect').value;
-    let verAgotados = document.getElementById('chkAgotados').checked;
+    let sortOption = document.getElementById('ordenarSelect')?.value || 'relevancia';
+    let verAgotados = document.getElementById('chkAgotados')?.checked || false;
     let resultado = inventario;
 
     if (!verAgotados) resultado = resultado.filter(p => p.StockNum > 0);
@@ -528,14 +528,11 @@ function aplicarFiltros() {
     if (sortOption === 'menor') resultado.sort((a, b) => a.PrecioNum - b.PrecioNum);
     else if (sortOption === 'mayor') resultado.sort((a, b) => b.PrecioNum - a.PrecioNum);
     else if (sortOption === 'az') resultado.sort((a, b) => a.Nombre.localeCompare(b.Nombre));
-    else if (q !== '') resultado.sort((a, b) => (b.ScoreBusqueda || 0) - (a.ScoreBusqueda || 0));
 
     productosFiltradosGlobal = resultado;
     paginaActual = 1;
     renderizarPagina();
 }
-function cerrarModal(modalId, navAnterior = 'nav-home') { if (modalId === 'all') { document.querySelectorAll('.modal-fullscreen').forEach(m => m.style.display = 'none'); return; } const m = document.getElementById(modalId); if (m) m.style.display = 'none'; if (navAnterior === 'modal-ajustes') { abrirAjustes(); } else { setActiveNav(navAnterior); } }
 
-window.limpiarCacheAdmin = function () { localStorage.clear(); sessionStorage.clear(); if ('caches' in window) { caches.keys().then(n => n.forEach(c => caches.delete(c))); } if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(r => r.forEach(s => s.unregister())); } alert('Toda la memoria y caché eliminados.'); window.location.href = window.location.pathname + '?v=' + new Date().getTime(); }
-
-window.onload = cargarInventario;
+// --- INICIO DE LA APLICACIÓN ---
+cargarInventario();
