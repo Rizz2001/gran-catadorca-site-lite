@@ -241,6 +241,24 @@ window.mostrarSkeletonCategorias = function () {
     }
 }
 
+window.mostrarSkeletonProductos = function () {
+    const cont = document.getElementById('lista-productos');
+    if (!cont) return;
+    cont.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+        cont.innerHTML += `
+            <div class="producto-card" style="pointer-events:none; border: 1px solid var(--color-border); box-shadow: none;">
+                <div class="skeleton-box" style="width: 100%; height: 160px; border-radius: var(--radius-sm); margin-bottom: 12px;"></div>
+                <div class="skeleton-box" style="width: 85%; height: 16px; border-radius: 4px; margin-bottom: 8px;"></div>
+                <div class="skeleton-box" style="width: 60%; height: 12px; border-radius: 4px; margin-bottom: 15px;"></div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto;">
+                    <div class="skeleton-box" style="width: 45%; height: 24px; border-radius: 4px;"></div>
+                    <div class="skeleton-box" style="width: 36px; height: 36px; border-radius: 50%;"></div>
+                </div>
+            </div>`;
+    }
+}
+
 function generarCategorias() {
     unificarBarrasCategorias();
     const cont = document.getElementById('contenedorCategorias');
@@ -394,10 +412,19 @@ async function cargarSubcategoriasAPI(nombreCategoria) {
             let btn = document.createElement('button');
             btn.className = (codSub === subcategoriaActual || limpiarCategoria(nombreSub) === subcategoriaActual) ? "subcat-btn active" : "subcat-btn";
             btn.innerHTML = `<span>${nombreMostrado}</span>`;
-            btn.onclick = function () {
+            btn.onclick = async function () {
                 subcategoriaActual = codSub;
                 Array.from(subcatContainer.children).forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
+
+                // --- LÓGICA DE API POR SUBGRUPO ---
+                appState.subgruposCargados = appState.subgruposCargados || [];
+                let cacheKey = `${codGrupo}-${codSub}`;
+                if (codGrupo && codSub && !appState.subgruposCargados.includes(cacheKey)) {
+                    if (typeof mostrarSkeletonProductos === 'function') mostrarSkeletonProductos();
+                    if (typeof cargarProductosPorSubgrupo === 'function') await cargarProductosPorSubgrupo(codGrupo, codSub, nombreCategoria, nombreSub);
+                }
+
                 aplicarFiltros();
             };
             subcatContainer.appendChild(btn);
@@ -443,6 +470,7 @@ async function filtrarCategoria(cat, btn) {
             let nombreGrupo = grupoMatch.Nombre || grupoMatch.nombre || grupoMatch.Descripcion;
 
             if (appState.gruposCargados && !appState.gruposCargados.includes(codGrupo)) {
+                if (typeof mostrarSkeletonProductos === 'function') mostrarSkeletonProductos();
                 // Forzamos la descarga en este momento si no se había descargado en segundo plano aún
                 await cargarProductosPorGrupo(codGrupo, nombreGrupo);
             }

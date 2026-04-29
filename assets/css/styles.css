@@ -413,6 +413,16 @@ textarea {
     animation: skeleton-pulse-dark 1.5s infinite ease-in-out;
 }
 
+/* --- SKELETON GENÉRICO PARA PRODUCTOS --- */
+.skeleton-box {
+    background-color: rgba(0, 0, 0, 0.08);
+    animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+
+.dark-mode .skeleton-box {
+    animation: skeleton-pulse-dark 1.5s infinite ease-in-out;
+}
+
 /* --- FULL-WIDTH EN PANTALLAS GRANDES --- */
 @media (min-width: 1440px) {
     .footer-container {

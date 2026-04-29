@@ -250,11 +250,15 @@ async function cargarInventarioDesdeAPI() {
     // Fallback: Si no hay categoría actual o estamos en "Todos", cargamos el primero disponible
     if (!grupoInicial && grupos.length > 0) {
         grupoInicial = grupos[0];
+        // CORRECCIÓN: Actualizamos la categoría actual para que coincida con lo que descargamos y no se oculten
+        categoriaActual = grupoInicial.Nombre || grupoInicial.nombre || grupoInicial.Descripcion || "Todos";
+        appState.filtros.categoriaActual = categoriaActual;
     }
 
     if (grupoInicial) {
         let codGrupo = (grupoInicial.CodGrupo || grupoInicial.codigo || grupoInicial.id || "").toString().trim();
         let nombreGrupo = grupoInicial.Nombre || grupoInicial.nombre || grupoInicial.Descripcion || "Grupo";
+        if (typeof mostrarSkeletonProductos === 'function') mostrarSkeletonProductos();
         await cargarProductosPorGrupo(codGrupo, nombreGrupo);
     }
 
@@ -282,15 +286,24 @@ async function cargarProductosPorGrupo(codGrupo, nombreGrupo) {
 
         if (articulos.length > 0) {
             let nuevosProductos = articulos.map(item => {
-                let precioUsd = parseFloat(item.precio || item.Precio || item.precio1 || item.Precio1 || 0);
-                let stock = parseFloat(item.existencia || item.Existencia || item.stock || item.Stock || 0);
+                // Mapeo ultra-seguro de Precios (cubre variaciones de la API SmartVentas)
+                let precioRaw = item.precio ?? item.Precio ?? item.precio1 ?? item.Precio1 ?? item.precio_1 ?? item.precio_detal ?? item.monto ?? 0;
+                let precioUsd = parseFloat(precioRaw);
+
+                // Mapeo ultra-seguro del Stock (asumimos 10 si la API no manda la propiedad para que no se oculten)
+                let stockRaw = item.existencia ?? item.Existencia ?? item.stock ?? item.Stock ?? item.cantidad ?? item.Cantidad;
+                let stock = parseFloat(stockRaw !== undefined && stockRaw !== null ? stockRaw : 10);
+
                 let nombre = item.nombre || item.Nombre || item.descripcion || item.Descripcion || "Producto sin nombre";
+                let codigo = item.codigo || item.Codigo || item.id || item.Id || "";
 
                 let codSubgrupo = (item.CodSubgrupo || item.subgrupo || item.Subgrupo || item.subcategoria || item.Subcategoria || item.sub_grupo || item.id_subgrupo || item.cod_subgrupo || "").toString().trim();
                 let nombreSubgrupo = item.desc_subgrupo || item.Desc_subgrupo || item.nombre_subgrupo || item.desc_sub_grupo || codSubgrupo;
 
+                if (appState.siempreDisponibles && appState.siempreDisponibles.includes(codigo)) stock = 999;
+
                 return {
-                    codigo: item.codigo || item.Codigo || item.id || item.Id || "",
+                    codigo: codigo,
                     Nombre: nombre,
                     CatId: codGrupo,
                     Cat: limpiarCategoria(nombreGrupo),
@@ -306,9 +319,13 @@ async function cargarProductosPorGrupo(codGrupo, nombreGrupo) {
                     StockStr: stock > 0 ? stock.toString() : "0",
                     TextoBusquedaLimpio: quitarAcentos(nombre) + " " + quitarAcentos(nombreGrupo) + " " + quitarAcentos(nombreSubgrupo)
                 };
-            }).filter(p => p.PrecioNum > 0);
+            }).filter(p => p.PrecioNum >= 0); // Permitimos precio 0 temporalmente para evitar que se oculten por fallos
 
+            // Evitar duplicados si se recargan grupos/subgrupos
+            let codigosNuevos = nuevosProductos.map(p => p.codigo);
+            inventario = inventario.filter(p => !codigosNuevos.includes(p.codigo));
             inventario = [...inventario, ...nuevosProductos];
+
             appState.inventario = inventario;
             appState.gruposCargados.push(codGrupo);
 
@@ -316,6 +333,62 @@ async function cargarProductosPorGrupo(codGrupo, nombreGrupo) {
             return true;
         }
     } catch (e) { console.error(`⚠️ Error cargando grupo ${codGrupo}:`, e); }
+
+    return false;
+}
+
+async function cargarProductosPorSubgrupo(codGrupo, codSubgrupo, nombreGrupo, nombreSubgrupo) {
+    appState.subgruposCargados = appState.subgruposCargados || [];
+    let cacheKey = `${codGrupo}-${codSubgrupo}`;
+    if (appState.subgruposCargados.includes(cacheKey)) return false; // Ya fue descargado
+
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const proxyBaseUrl = window.location.hostname.includes('pages.dev') ? '/api/proxy'
+        : isLocalhost ? 'https://gran-catador.pages.dev/api/proxy'
+            : 'functions/api/proxy.php';
+    console.log(`📡 Consultando productos del subgrupo: ${nombreSubgrupo} (ID: ${codSubgrupo})`);
+
+    try {
+        // Codificamos el endpoint para que el Proxy Cloudflare/PHP pueda anexarlo a su base sin romper el query `?codSubgrupo=`
+        const endpointUrl = `articulos/grupo/${encodeURIComponent(codGrupo)}?codSubgrupo=${encodeURIComponent(codSubgrupo)}`;
+        const res = await fetch(`${proxyBaseUrl}?endpoint=${encodeURIComponent(endpointUrl)}`);
+        if (!res.ok) return false;
+
+        const data = await res.json();
+        let articulos = Array.isArray(data) ? data : (data.data || data.articulos || data.result || []);
+
+        if (articulos.length > 0) {
+            let nuevosProductos = articulos.map(item => {
+                let precioRaw = item.precio ?? item.Precio ?? item.precio1 ?? item.Precio1 ?? item.precio_1 ?? item.precio_detal ?? item.monto ?? 0;
+                let precioUsd = parseFloat(precioRaw);
+                let stockRaw = item.existencia ?? item.Existencia ?? item.stock ?? item.Stock ?? item.cantidad ?? item.Cantidad;
+                let stock = parseFloat(stockRaw !== undefined && stockRaw !== null ? stockRaw : 10);
+                let nombre = item.nombre || item.Nombre || item.descripcion || item.Descripcion || "Producto sin nombre";
+                let codigo = item.codigo || item.Codigo || item.id || item.Id || "";
+
+                if (appState.siempreDisponibles && appState.siempreDisponibles.includes(codigo)) stock = 999;
+
+                return {
+                    codigo: codigo, Nombre: nombre, CatId: codGrupo, Cat: limpiarCategoria(nombreGrupo), SubCatId: codSubgrupo,
+                    SubCat: limpiarCategoria(nombreSubgrupo || nombre), PrecioStr: precioUsd.toFixed(2), PrecioNum: precioUsd,
+                    PrecioBsStr: (precioUsd * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
+                    PrecioCajaUsd: (precioUsd * 12).toFixed(2), PrecioCajaNum: precioUsd * 12, PrecioCajaBsStr: ((precioUsd * 12) * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
+                    StockNum: stock, StockStr: stock > 0 ? stock.toString() : "0", TextoBusquedaLimpio: quitarAcentos(nombre) + " " + quitarAcentos(nombreGrupo) + " " + quitarAcentos(nombreSubgrupo || "")
+                };
+            }).filter(p => p.PrecioNum >= 0);
+
+            // Prevenir duplicados contra el inventario existente
+            let codigosNuevos = nuevosProductos.map(p => p.codigo);
+            inventario = inventario.filter(p => !codigosNuevos.includes(p.codigo));
+            inventario = [...inventario, ...nuevosProductos];
+
+            appState.inventario = inventario;
+            appState.subgruposCargados.push(cacheKey); // Marcar como descargado
+
+            console.log(`✅ ${nuevosProductos.length} productos agregados del subgrupo ${nombreSubgrupo}`);
+            return true;
+        }
+    } catch (e) { console.error(`⚠️ Error cargando subgrupo ${codSubgrupo}:`, e); }
 
     return false;
 }
