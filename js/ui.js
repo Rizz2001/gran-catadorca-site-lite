@@ -90,6 +90,17 @@ function setActiveNav(id) {
     if (el) el.classList.add('active');
 }
 
+/** Cierra uno o todos los modales y actualiza la navegación */
+function cerrarModal(modalId, navId) {
+    if (modalId === 'all') {
+        document.querySelectorAll('.modal-fullscreen').forEach(m => m.style.display = 'none');
+    } else {
+        let modal = document.getElementById(modalId);
+        if (modal) modal.style.display = 'none';
+    }
+    if (navId) setActiveNav(navId);
+}
+
 /** Restablece la vista al menú principal (Inicio) */
 function irInicio() {
     cerrarModal('all');
@@ -182,6 +193,14 @@ function toggleDark() {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem('gc_dark', document.body.classList.contains('dark-mode'));
 }
+
+/** Limpia la caché y recarga la página (Usado en el modal de Ajustes) */
+function limpiarCacheAdmin() {
+    localStorage.clear();
+    mostrarToast("Caché limpiada. Recargando...");
+    setTimeout(() => location.reload(), 1500);
+}
+
 function mostrarToast(msg) { const cont = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = msg; cont.appendChild(t); setTimeout(() => t.remove(), 2500); }
 
 // --- VISTAS Y CATEGORÍAS ---
@@ -206,28 +225,7 @@ function getIconForCategory(cat) {
     return 'fa-box-open';
 }
 
-function unificarBarrasCategorias() {
-    const cat = document.getElementById('contenedorCategorias');
-    const sub = document.getElementById('subcategoria-section-main');
-
-    // Obtenemos el wrapper principal de la categoría (que contiene las flechas en index.html)
-    const catWrapper = cat ? cat.closest('.scroll-container-wrapper') : null;
-
-    if (catWrapper && sub && !document.getElementById('categorias-wrapper-unified')) {
-        const wrapper = document.createElement('div');
-        wrapper.id = 'categorias-wrapper-unified';
-        wrapper.className = 'categorias-wrapper-unified';
-
-        // Insertamos la nueva caja maestra en el DOM
-        catWrapper.parentNode.insertBefore(wrapper, catWrapper);
-        // Movemos el wrapper de categorías y la sección de subcategorías adentro de la misma caja
-        wrapper.appendChild(catWrapper);
-        wrapper.appendChild(sub);
-    }
-}
-
 window.mostrarSkeletonCategorias = function () {
-    unificarBarrasCategorias();
     const cont = document.getElementById('contenedorCategorias');
     if (!cont) return;
     cont.innerHTML = '';
@@ -260,7 +258,6 @@ window.mostrarSkeletonProductos = function () {
 }
 
 function generarCategorias() {
-    unificarBarrasCategorias();
     const cont = document.getElementById('contenedorCategorias');
     if (!cont) return;
 
@@ -515,23 +512,41 @@ function toggleCategorias() { const panel = document.getElementById('categoria-p
 function closeCategorias() { const panel = document.getElementById('categoria-panel'); const overlay = document.getElementById('categoria-overlay'); if (panel) panel.classList.remove('open'); if (overlay) overlay.style.display = 'none'; }
 
 // --- SUGERENCIAS E INTERACCIONES ---
-function mostrarSugerencias(q) {
-    let qLimpio = quitarAcentos(q); let terminos = qLimpio.split(' ').filter(t => t.length > 0).map(procesarTermino);
-    let coincidencias = inventario.filter(p => {
-        if (p.StockNum <= 0) return false;
-        let textoCompleto = p.TextoBusquedaLimpio; let words = textoCompleto.split(' ');
-        let coincide = terminos.every(term => { if (textoCompleto.includes(term)) return true; if (term.length >= 4) return words.some(w => levenshtein(term, w) <= (term.length >= 6 ? 2 : 1)); return false; });
-        if (coincide) { let nLimpio = quitarAcentos(p.Nombre); let wNombre = nLimpio.split(' '); p.TempScore = 0; terminos.forEach(t => { if (wNombre.includes(t)) p.TempScore += 50; else if (nLimpio.includes(t)) p.TempScore += 25; else p.TempScore += 10; }); } return coincide;
-    });
-    coincidencias.sort((a, b) => b.TempScore - a.TempScore); coincidencias = coincidencias.slice(0, 5);
+/**
+ * Muestra el panel de sugerencias usando resultados ya calculados por aplicarFiltros.
+ * No hace una segunda pasada al inventario.
+ * @param {string} q - Query normalizado
+ * @param {Array} resultados - Productos ya filtrados y ordenados por score
+ */
+function mostrarSugerencias(q, resultados) {
     const cont = document.getElementById('search-suggestions');
-    if (coincidencias.length === 0) { cerrarSugerencias(); aplicarFiltros(); return; }
+    if (!cont) return;
+
+    // Tomamos solo los primeros 6 con stock para las sugerencias
+    const sugerencias = resultados.filter(p => p.StockNum > 0).slice(0, 6);
+
+    if (sugerencias.length === 0) { cerrarSugerencias(); return; }
+
     cont.innerHTML = '';
-    coincidencias.forEach(p => { let carpeta = getCategoriaFolder(p.Cat); const div = document.createElement('div'); div.className = 'suggestion-item'; div.innerHTML = `<img src="assets/img/${carpeta}/${p.codigo}/1.webp" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="0" onerror="imgFallbackFolder(this)"><span>${p.Nombre}</span>`; div.onclick = () => { document.getElementById('buscador').value = p.Nombre; cerrarSugerencias(); aplicarFiltros(); }; cont.appendChild(div); });
-    cont.style.display = 'block'; aplicarFiltros();
+    sugerencias.forEach(p => {
+        let carpeta = getCategoriaFolder(p.Cat);
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.innerHTML = `<img src="assets/img/${carpeta}/${p.codigo}/1.webp" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="0" onerror="imgFallbackFolder(this)"><span>${p.Nombre}</span>`;
+        div.onclick = () => {
+            document.getElementById('buscador').value = p.Nombre;
+            // Mostrar/ocultar el ícono ×
+            const clearBtn = document.getElementById('clear-search');
+            if (clearBtn) clearBtn.style.display = 'flex';
+            cerrarSugerencias();
+            aplicarFiltros();
+        };
+        cont.appendChild(div);
+    });
+    cont.style.display = 'block';
 }
-function cerrarSugerencias() { document.getElementById('search-suggestions').style.display = 'none'; }
-document.addEventListener('click', (e) => { if (!e.target.closest('.search-container')) cerrarSugerencias(); });
+function cerrarSugerencias() { const cont = document.getElementById('search-suggestions'); if (cont) cont.style.display = 'none'; }
+document.addEventListener('click', (e) => { if (!e.target.closest('.search-pill') && !e.target.closest('.search-container')) cerrarSugerencias(); });
 function toggleFav(codigo) { let index = favoritos.indexOf(codigo); if (index === -1) { favoritos.push(codigo); mostrarToast("Agregado a favoritos ❤️"); } else { favoritos.splice(index, 1); } localStorage.setItem('gc_favs', JSON.stringify(favoritos)); aplicarFiltros(); }
 function compartirProducto(nombre, precio) { const text = `¡Mira esta bebida! ${nombre} a solo $${precio}. ${window.location.href}`; if (navigator.share) { navigator.share({ title: 'Gran Catador', text, url: window.location.href }).catch(e => console.log(e)); return; } if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => mostrarToast("Texto copiado al portapapeles."), () => fallbackCopyText(text)); return; } fallbackCopyText(text); }
 function fallbackCopyText(text) { const textarea = document.createElement('textarea'); textarea.value = text; textarea.style.position = 'fixed'; textarea.style.opacity = '0'; document.body.appendChild(textarea); textarea.focus(); textarea.select(); try { document.execCommand('copy'); mostrarToast("Texto copiado al portapapeles."); } catch (e) { mostrarToast("No se pudo copiar al portapapeles."); } document.body.removeChild(textarea); }
@@ -651,8 +666,9 @@ function renderizarPagina() {
     const cont = document.getElementById('lista-productos');
     if (paginaActual === 1) cont.innerHTML = '';
 
-    let inicio = (paginaActual - 1) * itemsPorPagina, fin = paginaActual * itemsPorPagina;
-    let pedazo = productosFiltradosGlobal.slice(inicio, fin);
+    const inicio = (paginaActual - 1) * itemsPorPagina;
+    const fin = paginaActual * itemsPorPagina;
+    const pedazo = productosFiltradosGlobal.slice(inicio, fin);
 
     if (productosFiltradosGlobal.length === 0) {
         if (paginaActual === 1) {
@@ -668,14 +684,15 @@ function renderizarPagina() {
         return;
     }
 
-    const html = pedazo.map(crearHTMLProducto).join('');
-    cont.insertAdjacentHTML('beforeend', html);
+    // Usar DocumentFragment para evitar reflows intermedios
+    const fragment = document.createDocumentFragment();
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = pedazo.map(crearHTMLProducto).join('');
+    while (tempDiv.firstChild) fragment.appendChild(tempDiv.firstChild);
+    cont.appendChild(fragment);
 
-    if (fin < productosFiltradosGlobal.length) {
-        document.getElementById('btn-cargar-mas').style.display = 'block';
-    } else {
-        document.getElementById('btn-cargar-mas').style.display = 'none';
-    }
+    document.getElementById('btn-cargar-mas').style.display =
+        fin < productosFiltradosGlobal.length ? 'block' : 'none';
 }
 
 function cargarMasProductos() {
