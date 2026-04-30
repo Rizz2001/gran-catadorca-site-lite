@@ -216,25 +216,25 @@ textarea {
     white-space: nowrap !important;
     border-radius: 25px !important;
     /* Más redondeados */
-    padding: 10px 20px !important;
-    /* Más grandes para tocarlos fácil */
+    padding: 6px 14px !important;
+    /* Reducidos para que quepan más */
     background: var(--item-bg, #fff);
     border: 1px solid var(--borde-color, #ddd) !important;
     color: var(--color-text, #333);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 12px;
     transition: 0.2s ease;
     display: flex !important;
     flex-direction: row !important;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     /* Separación perfecta entre el ícono y el texto */
     cursor: pointer;
     user-select: none;
 }
 
 .horizontal-filters .cat-btn i {
-    font-size: 16px !important;
+    font-size: 14px !important;
 }
 
 .horizontal-filters .cat-btn:active {
@@ -267,17 +267,17 @@ textarea {
     white-space: nowrap !important;
     border-radius: 8px !important;
     /* Más cuadrados, menos de "píldora" */
-    padding: 6px 14px !important;
+    padding: 4px 10px !important;
     /* Más pequeños */
     background: transparent;
     border: 1px solid var(--borde-color, #ddd) !important;
     color: var(--color-text-muted, #666);
     font-weight: 500;
-    font-size: 12.5px;
+    font-size: 11px;
     transition: 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     cursor: pointer;
     user-select: none;
 }

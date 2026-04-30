@@ -1014,6 +1014,7 @@ body.dark-mode .producto-card {
   overflow: hidden;
   position: relative;
   padding: 10px;
+  flex-shrink: 0;
 }
 
 body.dark-mode .product-img-container {
@@ -1052,7 +1053,8 @@ body.dark-mode .product-img-container img {
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-height: 36px;
+  height: 38px;
+  flex-shrink: 0;
   font-family: 'Inter', sans-serif;
 }
 
