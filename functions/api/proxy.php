@@ -12,16 +12,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Atrapa cualquier endpoint dinámico (grupos, subgrupos, artículos)
+// Atrapa cualquier endpoint dinámico (grupos, subgrupos, artículos) o una ruta de imagen (imagePath)
 $endpoint = isset($_GET['endpoint']) ? $_GET['endpoint'] : 'gruposinv';
-$urlFoxdata = 'https://apismartventas.foxdata.app/api/v1/syn/' . $endpoint;
+$imagePath = isset($_GET['imagePath']) ? $_GET['imagePath'] : null;
 
-// Redirigir cualquier parámetro extra (como codSubgrupo) hacia la API destino
-$queryParams = $_GET;
-unset($queryParams['endpoint']);
-if (!empty($queryParams)) {
-    $separator = strpos($urlFoxdata, '?') !== false ? '&' : '?';
-    $urlFoxdata .= $separator . http_build_query($queryParams);
+if ($imagePath) {
+    $urlFoxdata = 'https://apismartventas.foxdata.app' . $imagePath;
+} else {
+    $urlFoxdata = 'https://apismartventas.foxdata.app/api/v1/syn/' . $endpoint;
+    
+    // Redirigir cualquier parámetro extra (como codSubgrupo) hacia la API destino
+    $queryParams = $_GET;
+    unset($queryParams['endpoint']);
+    if (!empty($queryParams)) {
+        $separator = strpos($urlFoxdata, '?') !== false ? '&' : '?';
+        $urlFoxdata .= $separator . http_build_query($queryParams);
+    }
 }
 
 // 1. OBTENER UN TOKEN FRESCO
@@ -45,14 +51,26 @@ curl_close($chToken);
 $tokenData = json_decode($tokenResponse, true);
 $tokenFresco = isset($tokenData['access_token']) ? $tokenData['access_token'] : '';
 
-// 2. CONSULTAR EL ENDPOINT SOLICITADO
+// 2. CONSULTAR EL ENDPOINT O IMAGEN SOLICITADA
 $chApi = curl_init($urlFoxdata);
 curl_setopt($chApi, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($chApi, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $tokenFresco, 'Content-Type: application/json']);
+
+if ($imagePath) {
+    // Para imágenes no enviamos Content-Type: application/json
+    curl_setopt($chApi, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $tokenFresco]);
+} else {
+    curl_setopt($chApi, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $tokenFresco, 'Content-Type: application/json']);
+}
+
 curl_setopt($chApi, CURLOPT_SSL_VERIFYPEER, false);
 $apiResponse = curl_exec($chApi);
 $httpCode = curl_getinfo($chApi, CURLINFO_HTTP_CODE);
+$contentType = curl_getinfo($chApi, CURLINFO_CONTENT_TYPE);
 curl_close($chApi);
+
+if ($imagePath) {
+    header('Content-Type: ' . $contentType);
+}
 
 http_response_code($httpCode);
 echo $apiResponse;

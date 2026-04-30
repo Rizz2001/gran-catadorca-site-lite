@@ -19,17 +19,39 @@
         /* Reducimos el espacio entre los iconos */
     }
 
-    /* Hacemos los iconos ligeramente más pequeños en móviles */
+    /* Hacemos los iconos más pequeños en móviles para que no ocupen tanto espacio */
     .icon-btn {
-        width: 36px !important;
-        height: 36px !important;
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 14px !important;
+    }
+    
+    .header-brand img {
+        height: 28px !important;
+        width: 28px !important;
+    }
+    
+    .brand-text {
         font-size: 16px !important;
     }
 
     .header-center {
         order: 3;
         width: 100%;
-        margin-top: 12px;
+        margin-top: 8px;
+    }
+
+    .search-pill {
+        padding: 6px 12px;
+    }
+    
+    .search-icon {
+        font-size: 13px;
+        margin-right: 8px;
+    }
+    
+    .search-pill input {
+        font-size: 13px;
     }
 }
 

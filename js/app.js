@@ -346,6 +346,9 @@ async function cargarProductosPorGrupo(codGrupo, nombreGrupo) {
                 let codigo = item.codArticulo ?? item.codigo ?? item.Codigo ?? item.CodArticulo ?? item.cod_articulo ?? item.id ?? item.Id ?? "";
                 
                 let imagenUrl = item.imagenUrl ?? item.ImagenUrl ?? null;
+                if (imagenUrl && imagenUrl.startsWith('/')) {
+                    imagenUrl = proxyBaseUrl + '?imagePath=' + encodeURIComponent(imagenUrl);
+                }
 
                 let medida = item.medida ?? item.Medida ?? "";
                 let unidadGrup = item.unidadGrup ?? item.UnidadGrup ?? "CAJA";
@@ -466,6 +469,9 @@ async function cargarProductosPorSubgrupo(codGrupo, codSubgrupo, nombreGrupo, no
                 let codigo = item.codArticulo ?? item.codigo ?? item.Codigo ?? item.CodArticulo ?? item.cod_articulo ?? item.id ?? item.Id ?? "";
                 
                 let imagenUrl = item.imagenUrl ?? item.ImagenUrl ?? null;
+                if (imagenUrl && imagenUrl.startsWith('/')) {
+                    imagenUrl = proxyBaseUrl + '?imagePath=' + encodeURIComponent(imagenUrl);
+                }
 
                 let medida = item.medida ?? item.Medida ?? "";
                 let unidadGrup = item.unidadGrup ?? item.UnidadGrup ?? "CAJA";
@@ -586,9 +592,7 @@ function aplicarFiltros() {
     // Solo aplicamos filtros de categoría si NO hay una búsqueda activa.
     if (q.length === 0) {
         // ── 2. Filtro de categoría ────────────────────────────────────────────────
-        if (categoriaActual === 'Favoritos') {
-            resultado = resultado.filter(p => favoritos.includes(p.codigo));
-        } else if (categoriaActual !== 'Todos') {
+        if (categoriaActual !== 'Todos') {
             resultado = resultado.filter(p =>
                 p.Cat === limpiarCategoria(categoriaActual) ||
                 compararIDs(p.CatId, categoriaActual)
@@ -596,7 +600,7 @@ function aplicarFiltros() {
         }
 
         // ── 3. Filtro de subcategoría ─────────────────────────────────────────────
-        if (subcategoriaActual && categoriaActual !== 'Todos' && categoriaActual !== 'Favoritos') {
+        if (subcategoriaActual && categoriaActual !== 'Todos') {
             resultado = resultado.filter(p =>
                 compararIDs(p.SubCatId, subcategoriaActual) ||
                 p.SubCat === limpiarCategoria(subcategoriaActual) ||

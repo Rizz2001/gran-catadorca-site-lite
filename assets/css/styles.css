@@ -224,12 +224,17 @@ textarea {
     font-weight: 600;
     font-size: 14px;
     transition: 0.2s ease;
-    display: flex;
+    display: flex !important;
+    flex-direction: row !important;
     align-items: center;
     gap: 8px;
     /* Separación perfecta entre el ícono y el texto */
     cursor: pointer;
     user-select: none;
+}
+
+.horizontal-filters .cat-btn i {
+    font-size: 16px !important;
 }
 
 .horizontal-filters .cat-btn:active {

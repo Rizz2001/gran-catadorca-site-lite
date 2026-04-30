@@ -287,13 +287,6 @@ function limpiarCacheAdmin() {
         btnInicio.onclick = function () { irInicio(); };
         cont.appendChild(btnInicio);
 
-        // Botón Favoritos
-        let btnFav = document.createElement('button');
-        btnFav.className = (categoriaActual === 'Favoritos') ? "cat-btn active" : "cat-btn";
-        btnFav.innerHTML = `<i class="fa-solid fa-heart" style="${categoriaActual !== 'Favoritos' ? 'color: #ff4757;' : ''}"></i><span>Favoritos</span>`;
-        btnFav.onclick = function () { filtrarCategoria('Favoritos', this); };
-        cont.appendChild(btnFav);
-
         console.log("🛠️ Generando Grupos. Grupos API:", appState.gruposInventario?.length);
 
         // Categorías de la API SmartVentas
@@ -565,14 +558,12 @@ function limpiarCacheAdmin() {
     }
     function cerrarSugerencias() { const cont = document.getElementById('search-suggestions'); if (cont) cont.style.display = 'none'; }
     document.addEventListener('click', (e) => { if (!e.target.closest('.search-pill') && !e.target.closest('.search-container')) cerrarSugerencias(); });
-    function toggleFav(codigo) { let index = favoritos.indexOf(codigo); if (index === -1) { favoritos.push(codigo); mostrarToast("Agregado a favoritos ❤️"); } else { favoritos.splice(index, 1); } localStorage.setItem('gc_favs', JSON.stringify(favoritos)); aplicarFiltros(); }
     function compartirProducto(nombre, precio) { const text = `¡Mira esta bebida! ${nombre} a solo $${precio}. ${window.location.href}`; if (navigator.share) { navigator.share({ title: 'Gran Catador', text, url: window.location.href }).catch(e => console.log(e)); return; } if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => mostrarToast("Texto copiado al portapapeles."), () => fallbackCopyText(text)); return; } fallbackCopyText(text); }
     function fallbackCopyText(text) { const textarea = document.createElement('textarea'); textarea.value = text; textarea.style.position = 'fixed'; textarea.style.opacity = '0'; document.body.appendChild(textarea); textarea.focus(); textarea.select(); try { document.execCommand('copy'); mostrarToast("Texto copiado al portapapeles."); } catch (e) { mostrarToast("No se pudo copiar al portapapeles."); } document.body.removeChild(textarea); }
     function compartirProductoB64(b64, p) { compartirProducto(decodificarNombre(b64), p); }
 
     // --- RENDERIZADO DE PRODUCTOS (Fase 5: Mejora de Rendimiento) ---
     function crearHTMLProducto(p) {
-        const isFav = favoritos.includes(p.codigo);
         const isAgotado = p.StockNum <= 0;
         const nombreB64 = codificarNombre(p.Nombre);
 
@@ -601,15 +592,12 @@ function limpiarCacheAdmin() {
         // OPTIMIZACIÓN DE RENDIMIENTO: Solo cargamos la foto 1 en la cuadrícula.
         // Las otras 5 fotos se buscarán automáticamente solo cuando el cliente abra los detalles.
         let imgSrc = p.ImagenUrl ? p.ImagenUrl : `assets/img/${carpeta}/${p.codigo}/1.webp`;
-        let galeriasHTML = `<img loading="lazy" src="${imgSrc}" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="0" onerror="imgFallbackFolder(this)" alt="${p.Nombre}" style="scroll-snap-align: start; flex-shrink: 0; width: 100%; object-fit: contain;">`;
+        let galeriasHTML = `<img loading="lazy" src="${imgSrc}" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="0" onerror="imgFallbackFolder(this)" alt="${p.Nombre}" style="scroll-snap-align: start; flex-shrink: 0; width: 100%; height: 100%; object-fit: contain;">`;
 
         return `
         <div class="producto-card ${isAgotado ? 'agotado' : ''}">
             
             ${badgeHTML}
-            <button class="btn-fav ${isFav ? 'active' : ''}" onclick="toggleFav('${p.codigo}')" aria-label="Favorito">
-                <i class="fa-${isFav ? 'solid' : 'regular'} fa-heart"></i>
-            </button>
             
             <div onclick="abrirDetalleProducto('${p.codigo}')" onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); abrirDetalleProducto('${p.codigo}'); }" style="cursor: pointer; display: flex; flex-direction: column; flex-grow: 1;" role="button" tabindex="0" aria-label="Ver detalles de ${p.Nombre}">
                 <div class="product-img-container" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 8px;">
