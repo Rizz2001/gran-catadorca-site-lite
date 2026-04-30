@@ -216,25 +216,25 @@ textarea {
     white-space: nowrap !important;
     border-radius: 25px !important;
     /* Más redondeados */
-    padding: 6px 14px !important;
-    /* Reducidos para que quepan más */
+    padding: 5px 10px !important;
+    /* Aún más reducidos para observar más grupos */
     background: var(--item-bg, #fff);
     border: 1px solid var(--borde-color, #ddd) !important;
     color: var(--color-text, #333);
     font-weight: 600;
-    font-size: 12px;
+    font-size: 11px !important;
     transition: 0.2s ease;
     display: flex !important;
     flex-direction: row !important;
     align-items: center;
-    gap: 6px;
-    /* Separación perfecta entre el ícono y el texto */
+    gap: 4px !important;
+    /* Separación menor */
     cursor: pointer;
     user-select: none;
 }
 
 .horizontal-filters .cat-btn i {
-    font-size: 14px !important;
+    font-size: 12px !important;
 }
 
 .horizontal-filters .cat-btn:active {
@@ -267,17 +267,17 @@ textarea {
     white-space: nowrap !important;
     border-radius: 8px !important;
     /* Más cuadrados, menos de "píldora" */
-    padding: 4px 10px !important;
-    /* Más pequeños */
+    padding: 3px 8px !important;
+    /* Mucho más pequeños */
     background: transparent;
     border: 1px solid var(--borde-color, #ddd) !important;
     color: var(--color-text-muted, #666);
     font-weight: 500;
-    font-size: 11px;
+    font-size: 10px !important;
     transition: 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
     cursor: pointer;
     user-select: none;
 }
@@ -409,5 +409,92 @@ textarea {
     .footer-container {
         max-width: none;
         padding: 0 40px 40px;
+    }
+}
+
+/* --- AJUSTES DE GRILLA Y PRODUCTOS (RESPONSIVE) --- */
+
+/* Forzar 2 columnas en móviles con un espaciado adecuado */
+.productos-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    padding: 10px !important;
+}
+
+/* Adaptación progresiva para pantallas más grandes (Tablets y PC) */
+@media (min-width: 768px) {
+    .productos-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 15px !important;
+        padding: 20px !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    .productos-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+    }
+}
+
+/* Evitar deformación de las tarjetas y hacerlas uniformes */
+.producto-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+
+/* Altura fija estricta para las imágenes para que no empujen el contenedor de forma irregular */
+.product-img-container {
+    height: 130px !important;
+    min-height: 130px !important;
+    width: 100%;
+}
+
+/* Truncar textos de productos largos a un máximo de 2 líneas */
+.producto-titulo {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+    min-height: 31px;
+    /* Alineación perfecta si un texto ocupa 1 línea y el del lado 2 líneas */
+    margin-bottom: 4px !important;
+}
+
+/* --- AJUSTES PARA COMPACTAR HEADER EN MÓVIL --- */
+@media (max-width: 767px) {
+
+    /* Forzar al contenedor principal a no saltar de línea para que todo quepa en una fila */
+    .header-main-container {
+        flex-wrap: nowrap !important;
+        gap: 10px !important;
+        padding: 0 10px !important;
+        height: 56px;
+        /* Altura fija para el header principal */
+    }
+
+    /* Ocultar el texto "Gran Catador" en móvil para dar espacio al buscador */
+    .header-left .brand-text {
+        display: none !important;
+    }
+
+    /* Hacer que el buscador ocupe el espacio sobrante y se ubique en el medio */
+    .header-center {
+        flex: 1 1 auto !important;
+        /* Crece para ocupar el espacio disponible */
+        order: 2 !important;
+        /* Orden: 1.Logo, 2.Buscador, 3.Iconos */
+        margin: 0 !important;
+        min-width: 0;
+        /* Permite que el buscador se encoja si es necesario */
+    }
+
+    .header-right {
+        order: 3 !important;
     }
 }
