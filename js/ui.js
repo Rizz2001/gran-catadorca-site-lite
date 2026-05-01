@@ -512,32 +512,9 @@ function closeCategorias() { const panel = document.getElementById('categoria-pa
  * @param {Array} resultados - Productos ya filtrados y ordenados por score
  */
 function mostrarSugerencias(q, resultados) {
-    const cont = document.getElementById('search-suggestions');
-    if (!cont) return;
-
-    // Tomamos solo los primeros 6 con stock para las sugerencias
-    const sugerencias = resultados.filter(p => p.StockNum > 0).slice(0, 6);
-
-    if (sugerencias.length === 0) { cerrarSugerencias(); return; }
-
-    cont.innerHTML = '';
-    sugerencias.forEach(p => {
-        let carpeta = getCategoriaFolder(p.Cat);
-        const div = document.createElement('div');
-        div.className = 'suggestion-item';
-        let imgSrc = p.ImagenUrl ? p.ImagenUrl : `assets/img/${carpeta}/${p.codigo}/1.webp`;
-        div.innerHTML = `<img src="${imgSrc}" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="0" onerror="imgFallbackFolder(this)"><span>${p.Nombre}</span>`;
-        div.onclick = () => {
-            document.getElementById('buscador').value = p.Nombre;
-            // Mostrar/ocultar el ícono ×
-            const clearBtn = document.getElementById('clear-search');
-            if (clearBtn) clearBtn.style.display = 'flex';
-            cerrarSugerencias();
-            aplicarFiltros();
-        };
-        cont.appendChild(div);
-    });
-    cont.style.display = 'block';
+    // Función deshabilitada: Ya no se muestra la lista flotante (sugerencias). 
+    // El catálogo principal se actualiza en vivo al escribir.
+    cerrarSugerencias();
 }
 function cerrarSugerencias() { const cont = document.getElementById('search-suggestions'); if (cont) cont.style.display = 'none'; }
 document.addEventListener('click', (e) => { if (!e.target.closest('.search-pill') && !e.target.closest('.search-container')) cerrarSugerencias(); });

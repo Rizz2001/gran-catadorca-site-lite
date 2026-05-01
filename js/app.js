@@ -626,8 +626,7 @@ function aplicarFiltros() {
             }
         });
 
-        // Pasar los resultados a mostrarSugerencias SIN segunda pasada al inventario
-        mostrarSugerencias(q, resultadosFiltrados);
+        // Ya no desplegamos la lista flotante, la grilla se actualiza dinámicamente
     } else {
         cerrarSugerencias();
     }
