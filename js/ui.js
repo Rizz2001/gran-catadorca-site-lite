@@ -107,8 +107,15 @@ function irInicio() {
     setActiveNav('nav-home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    document.getElementById('buscador').value = '';
-    document.getElementById('chkAgotados').checked = false;
+    let inputBuscador = document.getElementById('buscador');
+    if (inputBuscador) inputBuscador.value = '';
+
+    let chk = document.getElementById('chkAgotados');
+    if (chk) chk.checked = false;
+
+    let sortSelect = document.getElementById('ordenarSelect');
+    if (sortSelect) sortSelect.value = 'relevancia';
+
     cerrarSugerencias();
     subcategoriaActual = null;
 

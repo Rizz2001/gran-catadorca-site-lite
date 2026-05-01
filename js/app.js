@@ -637,6 +637,10 @@ function aplicarFiltros() {
         if (sortOption === 'menor') resultadosFiltrados.sort((a, b) => a.PrecioNum - b.PrecioNum);
         else if (sortOption === 'mayor') resultadosFiltrados.sort((a, b) => b.PrecioNum - a.PrecioNum);
         else if (sortOption === 'az') resultadosFiltrados.sort((a, b) => a.Nombre.localeCompare(b.Nombre));
+        else if (sortOption === 'relevancia' && categoriaActual === 'Todos' && q.length === 0) {
+            // Mezclar aleatoriamente el catálogo principal ("Inicio" / "Todos")
+            resultadosFiltrados.sort(() => Math.random() - 0.5);
+        }
     }
 
     productosFiltradosGlobal = resultadosFiltrados;
