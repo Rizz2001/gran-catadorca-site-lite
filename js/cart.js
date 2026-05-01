@@ -201,7 +201,7 @@ function renderizarCarrito() {
         
         let carpeta = getCategoriaFolder(item.categoria);
         let imgHTML = item.codigo 
-            ? `<img src="assets/img/${carpeta}/${item.codigo}/1.webp" data-codigo="${item.codigo}" data-categoria="${item.categoria || ''}" data-index="1" data-attempts="0" onerror="imgFallbackFolder(this)" class="cart-item-img">` 
+            ? `<img loading="lazy" src="assets/img/${carpeta}/${item.codigo}/1.webp" data-codigo="${item.codigo}" data-categoria="${item.categoria || ''}" data-index="1" data-attempts="0" onerror="imgFallbackFolder(this)" class="cart-item-img">` 
             : `<div class="cart-item-img-placeholder"><i class="fa-solid fa-wine-bottle"></i></div>`;
             
         let btnMinus = item.cantidad > 1 ? '<i class="fa-solid fa-minus"></i>' : '<i class="fa-solid fa-trash-can" style="color: var(--color-danger);"></i>';

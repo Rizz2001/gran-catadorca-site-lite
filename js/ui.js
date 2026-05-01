@@ -642,13 +642,18 @@ async function abrirDetalleProducto(codigo) {
     }
 
     let descContainer = document.getElementById('detalle-descripcion');
-    descContainer.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando información...';
     document.getElementById('modal-producto').style.display = 'flex';
 
-    try {
-        let res = await fetch(`assets/img/${carpeta}/${p.codigo}/desc.txt`);
-        if (res.ok) { let text = await res.text(); descContainer.innerText = text; } else { descContainer.innerText = "Sin descripción adicional."; }
-    } catch (e) { descContainer.innerText = "Sin descripción adicional."; }
+    if (p.DescAdicional && p.DescAdicional.trim() !== '') {
+        descContainer.innerText = p.DescAdicional;
+    } else {
+        descContainer.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando información...';
+        try {
+            // Evitamos la caché del navegador al buscar el archivo local
+            let res = await fetch(`assets/img/${carpeta}/${p.codigo}/desc.txt?v=${new Date().getTime()}`);
+            if (res.ok) { let text = await res.text(); descContainer.innerText = text.trim().startsWith('<') ? "Sin descripción adicional." : text; } else { descContainer.innerText = "Sin descripción adicional."; }
+        } catch (e) { descContainer.innerText = "Sin descripción adicional."; }
+    }
 }
 
 function renderizarPagina() {

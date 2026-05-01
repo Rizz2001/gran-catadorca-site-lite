@@ -357,6 +357,7 @@ async function cargarProductosPorGrupo(codGrupo, nombreGrupo) {
 
                 let codSubgrupo = (item.codSubgrupo ?? item.CodSubgrupo ?? item.codsubgrupo ?? item.cod_subgrupo ?? item.id_subgrupo ?? item.subgrupo ?? item.subcategoria ?? "").toString().trim();
                 let nombreSubgrupo = item.desc_subgrupo ?? item.Desc_subgrupo ?? item.nombre_subgrupo ?? codSubgrupo;
+                let descAdicional = item.descExtensa ?? item.DescExtensa ?? item.comentario ?? item.Comentario ?? item.notas ?? item.Notas ?? "";
 
                 if (appState.siempreDisponibles && appState.siempreDisponibles.includes(codigo)) stock = 999;
 
@@ -380,7 +381,8 @@ async function cargarProductosPorGrupo(codGrupo, nombreGrupo) {
                     Medida: medida,
                     UnidadGrup: unidadGrup,
                     UnidadSimple: unidadSimple,
-                    ImagenUrl: imagenUrl
+                    ImagenUrl: imagenUrl,
+                    DescAdicional: descAdicional
                 };
             }).filter(p => p.PrecioNum >= 0); // Permitimos precio 0 temporalmente para evitar que se oculten por fallos
 
@@ -481,6 +483,7 @@ async function cargarProductosPorSubgrupo(codGrupo, codSubgrupo, nombreGrupo, no
                 let codSubApi = (item.codSubgrupo ?? item.CodSubgrupo ?? item.codsubgrupo ?? item.cod_subgrupo ?? item.id_subgrupo ?? "").toString().trim();
                 let subCatIdFinal = codSubApi || codSubgrupo;
                 let nombreSubFinal = item.desc_subgrupo ?? item.Desc_subgrupo ?? item.nombre_subgrupo ?? nombreSubgrupo;
+                let descAdicional = item.descExtensa ?? item.DescExtensa ?? item.comentario ?? item.Comentario ?? item.notas ?? item.Notas ?? "";
 
                 if (appState.siempreDisponibles && appState.siempreDisponibles.includes(codigo)) stock = 999;
 
@@ -499,7 +502,8 @@ async function cargarProductosPorSubgrupo(codGrupo, codSubgrupo, nombreGrupo, no
                     Medida: medida,
                     UnidadGrup: unidadGrup,
                     UnidadSimple: unidadSimple,
-                    ImagenUrl: imagenUrl
+                    ImagenUrl: imagenUrl,
+                    DescAdicional: descAdicional
                 };
             }).filter(p => p.PrecioNum >= 0);
 

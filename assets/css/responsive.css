@@ -51,7 +51,7 @@
     }
     
     .search-pill input {
-        font-size: 13px;
+        font-size: 16px !important; /* Previene el zoom automático del teclado en móviles */
     }
 
     /* --- PROTECCIÓN DE ESTRUCTURA: TARJETAS DE PRODUCTO MÓVIL --- */
