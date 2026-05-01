@@ -62,6 +62,13 @@
 
     .producto-card {
         padding: 10px !important; /* Más espacio interno para el contenido */
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; /* Sombra más pronunciada para dar relieve */
+        border: 1px solid var(--color-border) !important; /* Refuerza el borde */
+    }
+    
+    body.dark-mode .producto-card {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important; /* Mayor contraste de sombra en modo oscuro */
+        border-color: #4B5563 !important; /* Borde un poco más claro para separar bien */
     }
 
     .product-img-container {
