@@ -8,8 +8,8 @@
 
     <meta property="og:title" content="Gran Catador Supermercado y Bodegón">
     <meta property="og:description" content="Catálogo Online de Gran Catador Supermercado y Bodegón.">
-    <meta property="og:image" content="https://rizz2001.github.io/gran-catadorca-site-lite/logo.png">
-    <meta property="og:url" content="https://rizz2001.github.io/gran-catadorca-site-lite/">
+    <meta property="og:image" content="https://grancatador.com/logo.png">
+    <meta property="og:url" content="https://grancatador.com/">
     <meta property="og:type" content="website">
 
     <link rel="manifest" href="manifest.json">
@@ -45,9 +45,7 @@
         </div>
     </div>
 
-    <!-- Le quitamos el sticky a TODO el header para poder separar qué se queda y qué se va -->
     <header class="site-header">
-        <!-- Nivel 1: Barra Superior (Promo) -->
         <style>
             .marquee-container {
                 overflow: hidden;
@@ -81,14 +79,11 @@
             </div>
         </div>
 
-        <!-- Envolvemos en un contenedor Sticky SOLO lo esencial (Buscador, Logo, Tasas y Nav) -->
         <div class="sticky-header-content"
             style="position: sticky; top: 0; z-index: 2000; background: var(--color-bg, #0B132B); box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-            <!-- Nivel 2: Barra Principal (Buscador, Logo, Acciones) -->
             <div class="header-main-bar">
                 <div class="container header-main-container">
 
-                    <!-- Izquierda: Menú (Móvil), Logo y Ubicación -->
                     <div class="header-left">
                         <div class="header-brand" onclick="irInicio()">
                             <img src="logo.png" alt="Logo Gran Catador"
@@ -104,11 +99,9 @@
                         </div>
                     </div>
 
-                    <!-- Centro: Barra de Búsqueda Principal (Píldora) -->
                     <div class="header-center">
                         <div class="search-pill">
                             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                            <!-- Conectado al ID "buscador" para sincronizar sugerencias automáticas -->
                             <input type="text" id="buscador" placeholder="Buscar productos, grupos o marcas..."
                                 onkeyup="debounceBusqueda(event)" autocomplete="off">
                             <i class="fa-solid fa-circle-xmark clear-search-icon" id="clear-search"
@@ -117,9 +110,7 @@
                         </div>
                     </div>
 
-                    <!-- Derecha: Botones Circulares -->
                     <div class="header-right">
-                        <!-- Tasas y Soporte movidos aquí (Solo PC) -->
                         <div class="desktop-only"
                             style="color: var(--dorado); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(212, 175, 55, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.2); margin-right: 10px;"
                             title="Tasas Oficiales BCV">
@@ -150,7 +141,6 @@
                     </div>
                 </div>
             </div>
-            <!-- Nivel 2.5: Tasas Móvil -->
             <div class="mobile-only"
                 style="background: rgba(245, 158, 11, 0.05); border-bottom: 1px solid var(--color-border); padding: 8px 0; justify-content: center; color: var(--dorado); font-size: 12px; font-weight: 600; gap: 15px;">
                 <span style="display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-dollar-sign"></i> <span
@@ -160,11 +150,9 @@
                         id="tasaEuroValorMobile">...</span></span>
             </div>
 
-            <!-- Nivel 3: Barra de Categorías y Subgrupos Sticky -->
             <div class="header-nav-bar"
                 style="background: var(--color-bg); border-top: 1px solid var(--color-border); padding: 5px 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
                 <div class="container">
-                    <!-- Menú Deslizable de Grupos -->
                     <div class="scroll-container-wrapper" style="position: relative; margin-bottom: 0;">
                         <button class="scroll-arrow left-arrow" onclick="scrollHorizontal('contenedorCategorias', -300)"
                             aria-label="Desplazar a la izquierda"><i class="fa-solid fa-chevron-left"></i></button>
@@ -175,7 +163,6 @@
                             aria-label="Desplazar a la derecha"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
 
-                    <!-- Menú Deslizable de Subcategorías (Oculto por defecto) -->
                     <div class="scroll-container-wrapper" id="subcategoria-section-main"
                         style="display:none; position: relative; margin-bottom: 0; border-top: 1px solid var(--color-border); padding-top: 5px; margin-top: 5px;">
                         <button class="scroll-arrow left-arrow"
@@ -191,7 +178,6 @@
                 </div>
             </div>
 
-            <!-- Elementos JS ocultos temporalmente -->
             <span id="store-status" style="display:none;"></span>
         </div>
     </header>

@@ -708,7 +708,6 @@ function limpiarCacheAdmin() {
                 }
 
                 cont.innerHTML = `
-                <!-- grid-column: 1 / -1 permite que ocupe todo el ancho sea móvil o PC -->
                 <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: var(--texto-claro);">
                     <i class="fa-solid fa-wine-bottle" style="font-size: 60px; opacity: 0.3; margin-bottom: 15px;"></i>
                     <h3 style="color: var(--texto-oscuro); font-size: 16px; font-weight: bold;">¿Aún no tienes sed?</h3>
