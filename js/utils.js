@@ -218,7 +218,7 @@ function decodificarNombre(b64) { try { return decodeURIComponent(escape(atob(b6
 function imgFallback(imgElement, codigoProducto, categoria) {
     let attempts = imgElement.dataset.attempts ? parseInt(imgElement.dataset.attempts) : 0; const formatos = ['webp', 'jpg', 'png', 'jpeg']; attempts++;
     let carpeta = getCategoriaFolder(categoria);
-    if (attempts < formatos.length) { imgElement.dataset.attempts = attempts; imgElement.src = `assets/img/${carpeta}/${codigoProducto}.${formatos[attempts]}`; } else { imgElement.src = 'logo.png'; imgElement.onerror = null; }
+    if (attempts < formatos.length) { imgElement.dataset.attempts = attempts; imgElement.src = `assets/img/${carpeta}/${codigoProducto}.${formatos[attempts]}`; } else { imgElement.src = 'logo.webp'; imgElement.onerror = null; }
 }
 
 function imgFallbackFolder(imgElement) {
@@ -231,7 +231,7 @@ function imgFallbackFolder(imgElement) {
         imgElement.dataset.attempts = attempts;
         imgElement.src = `assets/img/${carpeta}/${codigo}/${index}.${formatos[attempts]}`;
     } else {
-        if (index === "1") { imgElement.src = 'logo.png'; } else { imgElement.style.display = 'none'; }
+        if (index === "1") { imgElement.src = 'logo.webp'; } else { imgElement.style.display = 'none'; }
         imgElement.onerror = null;
     }
 }

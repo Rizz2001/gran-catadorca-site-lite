@@ -12,17 +12,25 @@ export async function onRequest(context) {
     }
 
     try {
-        // Determinar qué endpoint quiere consultar la app (gruposinv o articulos)
+        // Determinar qué endpoint quiere consultar la app (gruposinv o articulos) o una imagen (imagePath)
         const requestUrl = new URL(context.request.url);
         const endpoint = requestUrl.searchParams.get("endpoint") || "gruposinv";
-        let urlFoxdata = `https://apismartventas.foxdata.app/api/v1/syn/${endpoint}`;
+        const imagePath = requestUrl.searchParams.get("imagePath");
+        
+        let urlFoxdata = "";
+        
+        if (imagePath) {
+            urlFoxdata = `https://apismartventas.foxdata.app${imagePath}`;
+        } else {
+            urlFoxdata = `https://apismartventas.foxdata.app/api/v1/syn/${endpoint}`;
 
-        // Pasar los parámetros extras de la URL original a Foxdata (como codSubgrupo)
-        const params = new URLSearchParams(requestUrl.searchParams);
-        params.delete("endpoint");
-        const extraQuery = params.toString();
-        if (extraQuery) {
-            urlFoxdata += (urlFoxdata.includes("?") ? "&" : "?") + extraQuery;
+            // Pasar los parámetros extras de la URL original a Foxdata (como codSubgrupo)
+            const params = new URLSearchParams(requestUrl.searchParams);
+            params.delete("endpoint");
+            const extraQuery = params.toString();
+            if (extraQuery) {
+                urlFoxdata += (urlFoxdata.includes("?") ? "&" : "?") + extraQuery;
+            }
         }
 
         // 2. OBTENER UN TOKEN FRESCO (Para que nunca expire)
@@ -43,15 +51,30 @@ export async function onRequest(context) {
         const tokenData = await tokenResponse.json();
         const tokenFresco = tokenData.access_token; // Aquí Cloudflare atrapa tu token automáticamente
 
-        // 3. CONSULTAR EL INVENTARIO CON EL TOKEN FRESCO
-        const apiResponse = await fetch(urlFoxdata, {
+        // 3. CONSULTAR EL INVENTARIO O IMAGEN CON EL TOKEN FRESCO
+        const fetchOptions = {
             method: 'GET',
             headers: {
-                // Aquí se inyecta el token automáticamente
-                'Authorization': `Bearer ${tokenFresco}`,
-                'Content-Type': 'application/json'
+                'Authorization': `Bearer ${tokenFresco}`
             }
-        });
+        };
+        
+        if (!imagePath) {
+            fetchOptions.headers['Content-Type'] = 'application/json';
+        }
+
+        const apiResponse = await fetch(urlFoxdata, fetchOptions);
+
+        if (imagePath) {
+            // Si es una imagen, devolver la respuesta binaria directamente
+            return new Response(apiResponse.body, {
+                status: apiResponse.status,
+                headers: {
+                    'Content-Type': apiResponse.headers.get('Content-Type') || 'image/jpeg',
+                    ...corsHeaders
+                }
+            });
+        }
 
         const responseData = await apiResponse.json();
 
