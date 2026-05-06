@@ -1,23 +1,5 @@
 /* --- OPTIMIZACIÓN RESPONSIVE MÓVIL (Buscador Full-Width) --- */
 @media (max-width: 767px) {
-    .header-main-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 10px;
-    }
-
-    .header-left {
-        order: 1;
-    }
-
-    .header-right {
-        order: 2;
-        display: flex;
-        gap: 5px;
-        /* Reducimos el espacio entre los iconos */
-    }
 
     /* Hacemos los iconos más pequeños en móviles para que no ocupen tanto espacio */
     .icon-btn {
@@ -35,12 +17,6 @@
         font-size: 16px !important;
     }
 
-    .header-center {
-        order: 3;
-        width: 100%;
-        margin-top: 8px;
-    }
-
     .search-pill {
         padding: 6px 12px;
     }
@@ -53,12 +29,6 @@
     .search-pill input {
         font-size: 16px !important;
         /* Previene el zoom automático del teclado en móviles */
-    }
-
-    /* --- PROTECCIÓN DE ESTRUCTURA: TARJETAS DE PRODUCTO MÓVIL --- */
-    .productos-grid {
-        gap: 10px !important;
-        padding: 0 12px 20px !important;
     }
 
     .producto-card {

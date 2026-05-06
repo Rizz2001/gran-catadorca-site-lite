@@ -48,12 +48,25 @@ export async function onRequest(context) {
             body: credenciales
         });
 
-        const tokenData = await tokenResponse.json();
+        const tokenRawText = await tokenResponse.text();
+        let tokenData;
+        try {
+            tokenData = JSON.parse(tokenRawText);
+        } catch (e) {
+            return new Response(JSON.stringify({ 
+                error: "El servidor de autenticación devolvió una respuesta inválida (No JSON)", 
+                detalles: tokenRawText.substring(0, 500)
+            }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json', ...corsHeaders }
+            });
+        }
         
         if (!tokenData.access_token) {
             return new Response(JSON.stringify({ 
                 error: "Fallo al obtener token de Foxdata", 
                 detalles: tokenData,
+                respuestaRaw: tokenRawText.substring(0, 500),
                 envStatus: {
                     clientIdConfigurado: !!context.env.FOXDATA_CLIENT_ID,
                     clientSecretConfigurado: !!context.env.FOXDATA_CLIENT_SECRET
@@ -91,7 +104,36 @@ export async function onRequest(context) {
             });
         }
 
-        const responseData = await apiResponse.json();
+        // Leer como texto primero para evitar "Unexpected end of JSON input"
+        const rawText = await apiResponse.text();
+
+        // Si la API de Foxdata devolvió un error HTTP, reportarlo claramente
+        if (!apiResponse.ok) {
+            return new Response(JSON.stringify({
+                error: `Foxdata respondió con HTTP ${apiResponse.status}`,
+                statusFoxdata: apiResponse.status,
+                urlConsultada: urlFoxdata,
+                respuestaRaw: rawText.substring(0, 500)
+            }), {
+                status: 502,
+                headers: { 'Content-Type': 'application/json', ...corsHeaders }
+            });
+        }
+
+        // Intentar parsear el JSON de forma segura
+        let responseData;
+        try {
+            responseData = JSON.parse(rawText);
+        } catch (parseError) {
+            return new Response(JSON.stringify({
+                error: "Foxdata devolvió una respuesta que no es JSON válido",
+                detalle: parseError.message,
+                respuestaRaw: rawText.substring(0, 500)
+            }), {
+                status: 502,
+                headers: { 'Content-Type': 'application/json', ...corsHeaders }
+            });
+        }
 
         // 4. DEVOLVER LOS DATOS A TU PÁGINA WEB (Con la puerta CORS abierta)
         return new Response(JSON.stringify(responseData), {

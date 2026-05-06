@@ -1551,20 +1551,13 @@ body.dark-mode .cart-header .panel-title {
 
 /* --- OPTIMIZACIÓN EXCLUSIVA PARA MÓVILES --- */
 @media (max-width: 767px) {
-  .header-main-container {
-    gap: 12px;
-    padding: 10px 15px;
+  .container {
+    padding: 0 12px;
   }
 
-  .header-left,
-  .header-right {
-    flex: 0 0 auto;
-  }
-
-  .header-center {
-    flex: 1 1 100%;
-    order: 3;
-    margin: 0;
+  .banners-container {
+    padding: 15px 12px 5px 12px;
+    gap: 10px;
   }
 
   .search-pill {
@@ -1594,7 +1587,7 @@ body.dark-mode .cart-header .panel-title {
     padding: 20px 15px;
     align-items: center;
     justify-content: space-between;
-    margin: 15px;
+    margin: 15px 0;
     border-radius: var(--radius-lg);
   }
 
@@ -1665,7 +1658,7 @@ body.dark-mode .cart-header .panel-title {
 
   .productos-grid {
     gap: 12px;
-    padding: 0 12px 20px;
+    padding: 10px 12px 20px;
     grid-template-columns: repeat(2, 1fr);
   }
 

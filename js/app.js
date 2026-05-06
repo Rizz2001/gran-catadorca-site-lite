@@ -326,8 +326,9 @@ async function cargarInventarioDesdeAPI() {
     // de lo contrario (Laragon, XAMPP, cPanel, Hostinger) usamos el proxy en PHP.
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
     const proxyBaseUrl = window.location.hostname.includes('pages.dev') ? '/api/proxy'
-        : (isLocalhost || window.location.hostname.includes('github.io')) ? 'https://gran-catador.pages.dev/api/proxy'
-            : 'functions/api/proxy.php';
+        : isLocalhost ? 'functions/api/proxy.php' 
+            : window.location.hostname.includes('github.io') ? 'https://gran-catador.pages.dev/api/proxy'
+                : 'functions/api/proxy.php';
 
     updateApiProgress(10);
     console.log("📡 Consultando API mediante Proxy Cloudflare...");
@@ -335,8 +336,16 @@ async function cargarInventarioDesdeAPI() {
     // --- 0 Y 1. DESCARGAR EXISTENCIAS Y GRUPOS EN PARALELO ---
     // Esto mejora el performance evitando que una petición bloquee a la otra
     const existenciasPromise = cargarExistenciasGlobales(proxyBaseUrl);
-    const gruposPromise = fetch(`${proxyBaseUrl}?endpoint=gruposinv`).then(res => {
-        if (!res.ok) throw new Error(`Error servidor grupos: ${res.status}`);
+    const gruposPromise = fetch(`${proxyBaseUrl}?endpoint=gruposinv`).then(async res => {
+        if (!res.ok) {
+            let errorMsg = `Error servidor grupos: ${res.status}`;
+            try {
+                const errorData = await res.json();
+                if (errorData.error) errorMsg += ` - ${errorData.error}`;
+                if (errorData.respuestaRaw) console.error("Detalle respuesta API:", errorData.respuestaRaw);
+            } catch (e) { /* No era JSON, ignorar */ }
+            throw new Error(errorMsg);
+        }
         return res.json();
     });
 
