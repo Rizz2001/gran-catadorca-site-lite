@@ -140,6 +140,7 @@ window.limpiarBuscador = function () {
 }
 
 function abrirLegales() {
+    cerrarModal('all');
     document.getElementById('modal-legales').style.display = 'flex';
 }
 

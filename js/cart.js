@@ -156,24 +156,29 @@ function sugerirAcompañante() {
 
     if (sugerencias.length > 0) {
         let cont = document.getElementById('cross-sell-items');
-        cont.innerHTML = sugerencias.map(p => {
-            let nombreB64 = codificarNombre(p.Nombre);
-            let imgSrc = p.ImagenUrl ? p.ImagenUrl : 'logo.webp';
-            return `
-                <div style="min-width:130px; border:1px solid var(--color-border); border-radius:var(--radius-md); padding:12px; text-align:center; background:var(--color-card); box-shadow:var(--shadow-sm);">
-                    <img src="${imgSrc}" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="0" onerror="imgFallbackFolder(this)" style="height:60px; width:100%; object-fit:contain; margin-bottom:8px; mix-blend-mode:multiply;">
-                    <p style="font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--color-text); font-family:'Inter',sans-serif;">${p.Nombre}</p>
-                    <p style="font-size:15px; color:var(--color-text); font-weight:700; font-family:'Inter',sans-serif; margin-top:2px;">$${p.PrecioStr}</p>
-                    <button onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioNum}, this, true, '${imgSrc}', false); cerrarCrossSell();" style="background:var(--color-primary); color:white; border:none; padding:8px; border-radius:var(--radius-full); font-size:12px; font-weight:700; width:100%; margin-top:8px; cursor:pointer; transition:0.2s;"><i class="fa-solid fa-plus"></i> Añadir</button>
-                </div>`;
-        }).join('');
+        let modal = document.getElementById('modal-cross-sell');
 
-        document.getElementById('modal-cross-sell').style.display = 'flex';
+        if (cont && modal) {
+            cont.innerHTML = sugerencias.map(p => {
+                let nombreB64 = codificarNombre(p.Nombre);
+                let imgSrc = p.ImagenUrl ? p.ImagenUrl : 'logo.webp';
+                return `
+                    <div style="min-width:130px; border:1px solid var(--color-border); border-radius:var(--radius-md); padding:12px; text-align:center; background:var(--color-card); box-shadow:var(--shadow-sm);">
+                        <img src="${imgSrc}" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="0" onerror="imgFallbackFolder(this)" style="height:60px; width:100%; object-fit:contain; margin-bottom:8px; mix-blend-mode:multiply;">
+                        <p style="font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--color-text); font-family:'Inter',sans-serif;">${p.Nombre}</p>
+                        <p style="font-size:15px; color:var(--color-text); font-weight:700; font-family:'Inter',sans-serif; margin-top:2px;">$${p.PrecioStr}</p>
+                        <button onclick="agregarAlCarritoB64('${nombreB64}', ${p.PrecioNum}, this, true, '${imgSrc}', false); cerrarCrossSell();" style="background:var(--color-primary); color:white; border:none; padding:8px; border-radius:var(--radius-full); font-size:12px; font-weight:700; width:100%; margin-top:8px; cursor:pointer; transition:0.2s;"><i class="fa-solid fa-plus"></i> Añadir</button>
+                    </div>`;
+            }).join('');
+
+            modal.style.display = 'flex';
+        }
     }
 }
 
 function cerrarCrossSell() {
-    document.getElementById('modal-cross-sell').style.display = 'none';
+    let modal = document.getElementById('modal-cross-sell');
+    if (modal) modal.style.display = 'none';
 }
 
 function actualizarCartCount() {

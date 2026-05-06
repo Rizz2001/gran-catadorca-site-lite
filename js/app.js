@@ -335,14 +335,19 @@ async function cargarInventarioDesdeAPI() {
     // --- 0 Y 1. DESCARGAR EXISTENCIAS Y GRUPOS EN PARALELO ---
     // Esto mejora el performance evitando que una petición bloquee a la otra
     const existenciasPromise = cargarExistenciasGlobales(proxyBaseUrl);
-    const gruposPromise = fetch(`${proxyBaseUrl}?endpoint=gruposinv`).then(async res => {
+    let gruposPromise = fetch(`${proxyBaseUrl}?endpoint=gruposinv`).then(async res => {
+        if (!res.ok && res.status >= 500) {
+            console.warn("⚠️ gruposinv falló, intentando con endpoint alternativo 'grupos'...");
+            return fetch(`${proxyBaseUrl}?endpoint=grupos`);
+        }
+        return res;
+    }).then(async res => {
         if (!res.ok) {
             let errorMsg = `Error servidor grupos: ${res.status}`;
             try {
                 const errorData = await res.json();
                 if (errorData.error) errorMsg += ` - ${errorData.error}`;
-                if (errorData.respuestaRaw) console.error("Detalle respuesta API:", errorData.respuestaRaw);
-            } catch (e) { /* No era JSON, ignorar */ }
+            } catch (e) { }
             throw new Error(errorMsg);
         }
         return res.json();
