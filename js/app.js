@@ -326,9 +326,8 @@ async function cargarInventarioDesdeAPI() {
     // de lo contrario (Laragon, XAMPP, cPanel, Hostinger) usamos el proxy en PHP.
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
     const proxyBaseUrl = window.location.hostname.includes('pages.dev') ? '/api/proxy'
-        : isLocalhost ? 'functions/api/proxy.php' 
-            : window.location.hostname.includes('github.io') ? 'https://gran-catador.pages.dev/api/proxy'
-                : 'functions/api/proxy.php';
+        : (isLocalhost || window.location.hostname.includes('github.io')) ? 'https://gran-catador.pages.dev/api/proxy'
+            : 'functions/api/proxy.php';
 
     updateApiProgress(10);
     console.log("📡 Consultando API mediante Proxy Cloudflare...");
