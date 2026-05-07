@@ -3,7 +3,10 @@
  */
 
 // --- VERIFICACIÓN DE EDAD Y HORARIO ---
-if (localStorage.getItem('ageVerified') === 'true') {
+// Detectar bots de motores de búsqueda (Googlebot, Bingbot, Yandex, etc.) para SEO
+const isBot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex|spider|crawler|robot/i.test(navigator.userAgent);
+
+if (localStorage.getItem('ageVerified') === 'true' || isBot) {
     let ag = document.getElementById('age-gate');
     if (ag) ag.style.display = 'none';
 }
