@@ -93,6 +93,19 @@ textarea {
     padding-bottom: 30px;
 }
 
+/* Ocultar la barra de scroll en el contenido del modal (móvil) */
+.modal-content-wrapper {
+    -ms-overflow-style: none;
+    /* IE y Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.modal-content-wrapper::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari y Opera */
+}
+
 /* --- OPTIMIZACIÓN DE MODALES PARA PC --- */
 @media (min-width: 768px) {
     .modal-fullscreen {
