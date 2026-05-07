@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://gran-catador.pages.dev/sitemap.xml
