@@ -630,7 +630,8 @@ function crearHTMLProducto(p) {
 
     let imgSrc = p.ImagenUrl ? p.ImagenUrl : `assets/img/productos/${p.codigo}.webp`;
     let attempts = p.ImagenUrl ? 0 : 1;
-    let galeriasHTML = `<img loading="lazy" decoding="async" width="300" height="300" src="${imgSrc}" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="${attempts}" onerror="imgFallbackFolder(this)" alt="${p.Nombre}" style="scroll-snap-align: start; flex-shrink: 0; width: 100%; height: 100%; object-fit: contain;" onload="this.parentElement.classList.remove('skeleton-box');">`;
+    // Se retiran las clases de scroll-snap porque la vista en miniatura no debería ser scrolleable para mejor UX
+    let galeriasHTML = `<img loading="lazy" decoding="async" width="300" height="300" src="${imgSrc}" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="${attempts}" onerror="imgFallbackFolder(this)" alt="${p.Nombre}" style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s ease; cursor: zoom-in;" onload="this.parentElement.classList.remove('skeleton-box');" onclick="event.stopPropagation(); abrirImagenLightbox(this.src, '${p.codigo}');">`;
 
     return `
         <div class="producto-card ${isAgotado ? 'agotado' : ''}">
@@ -638,8 +639,7 @@ function crearHTMLProducto(p) {
             ${badgeHTML}
             
             <div onclick="abrirDetalleProducto('${p.codigo}')" onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); abrirDetalleProducto('${p.codigo}'); }" style="cursor: pointer; display: flex; flex-direction: column; flex-grow: 1;" role="button" tabindex="0" aria-label="Ver detalles de ${p.Nombre}">
-                <div class="product-img-container skeleton-box" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 8px;">
-                    <style>.product-img-container::-webkit-scrollbar { display: none; }</style>
+                <div class="product-img-container skeleton-box" style="display: flex; justify-content: center; align-items: center; border-radius: 8px;">
                     ${galeriasHTML}
                 </div>
                 
@@ -656,7 +656,7 @@ function crearHTMLProducto(p) {
                     <span class="product-price-bs" style="font-size: 13px;">${precioBsDin} Bs</span>
                 </div>
                 
-            <button class="btn-add-cart ${isAgotado ? 'disabled' : ''}" aria-label="Agregar ${p.Nombre} al carrito" title="Agregar al carrito" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoB64('${nombreB64}', ${precioNum}, this, false, '${imgSrc}', ${esModoCaja})"`}>
+            <button class="btn-add-cart ${isAgotado ? 'disabled' : ''}" aria-label="Agregar ${p.Nombre} al carrito" title="Agregar al carrito" ${isAgotado ? 'disabled' : `onclick="event.stopPropagation(); agregarAlCarritoB64('${nombreB64}', ${precioNum}, this, false, '${imgSrc}', ${esModoCaja})"`}>
                     <i class="fa-solid fa-plus"></i>
                 </button>
             </div>
@@ -705,7 +705,7 @@ async function abrirDetalleProducto(codigo) {
     imgContainer.classList.add('skeleton-box');
     let imgUrl = p.ImagenUrl ? p.ImagenUrl : `assets/img/productos/${p.codigo}.webp`;
     let attempts = p.ImagenUrl ? 0 : 1;
-    let galeriasHTML = `<img loading="lazy" decoding="async" width="300" height="300" src="${imgUrl}" class="zoomable-img" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="${attempts}" onerror="imgFallbackFolder(this)" alt="Vista 1" style="scroll-snap-align: start; flex-shrink: 0; width: 100%; height: 100%; object-fit: contain;" onload="this.style.display='block'; this.parentElement.classList.remove('skeleton-box');" onmousemove="if(typeof handleZoom==='function') handleZoom(event, this)" onmouseleave="if(typeof resetZoom==='function') resetZoom(this)">`;
+    let galeriasHTML = `<img loading="lazy" decoding="async" width="300" height="300" src="${imgUrl}" class="zoomable-img" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="${attempts}" onerror="imgFallbackFolder(this)" alt="Vista 1" style="scroll-snap-align: start; flex-shrink: 0; width: 100%; height: 100%; object-fit: contain; cursor: zoom-in;" onload="this.style.display='block'; this.parentElement.classList.remove('skeleton-box');" onmousemove="if(typeof handleZoom==='function') handleZoom(event, this)" onmouseleave="if(typeof resetZoom==='function') resetZoom(this)" onclick="abrirImagenLightbox(this.src, '${p.codigo}')">`;
     imgContainer.innerHTML = galeriasHTML;
 
     let btnContainer = document.getElementById('detalle-btn-add');
@@ -893,4 +893,160 @@ window.handleZoom = function (e, img) {
 window.resetZoom = function (img) {
     if (window.innerWidth < 1024) return;
     img.style.transformOrigin = 'center center';
+};
+
+// --- LIGHTBOX DE IMAGEN PARA PC ---
+window.abrirImagenLightbox = function (imgSrc, codigo) {
+    let p = null;
+    if (codigo) {
+        p = inventario.find(x => x.codigo === codigo);
+    }
+
+    let lightbox = document.getElementById('image-lightbox-gc');
+    if (!lightbox) {
+        lightbox = document.createElement('div');
+        lightbox.id = 'image-lightbox-gc';
+        lightbox.style.position = 'fixed';
+        lightbox.style.top = '0';
+        lightbox.style.left = '0';
+        lightbox.style.width = '100vw';
+        lightbox.style.height = '100vh';
+        lightbox.style.backgroundColor = 'rgba(11, 19, 43, 0.92)'; // Azul marino muy oscuro
+        lightbox.style.zIndex = '9999';
+        lightbox.style.display = 'flex';
+        lightbox.style.justifyContent = 'center';
+        lightbox.style.alignItems = 'center';
+        lightbox.style.cursor = 'zoom-out';
+        lightbox.style.backdropFilter = 'blur(8px)';
+        lightbox.style.opacity = '0';
+        lightbox.style.transition = 'opacity 0.3s ease';
+
+        // Cierra el visor al hacer clic en cualquier parte, excepto en el panel de info
+        lightbox.onclick = function (e) {
+            if (e.target.closest('#lightbox-info-panel-gc')) return;
+            lightbox.style.opacity = '0';
+            setTimeout(() => lightbox.style.display = 'none', 300);
+        };
+
+        let container = document.createElement('div');
+        container.id = 'lightbox-container-gc';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'row';
+        container.style.maxWidth = '90%';
+        container.style.maxHeight = '90%';
+        container.style.gap = '30px';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+
+        let img = document.createElement('img');
+        img.id = 'lightbox-img-gc';
+        img.style.maxWidth = '60vw';
+        img.style.maxHeight = '85vh';
+        img.style.objectFit = 'contain';
+        img.style.borderRadius = '12px';
+        img.style.boxShadow = '0 20px 50px rgba(0,0,0,0.6)';
+        img.style.transform = 'scale(0.8)';
+        img.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+
+        let infoPanel = document.createElement('div');
+        infoPanel.id = 'lightbox-info-panel-gc';
+        infoPanel.style.borderRadius = '16px';
+        infoPanel.style.padding = '25px';
+        infoPanel.style.width = '350px';
+        infoPanel.style.minWidth = '300px';
+        infoPanel.style.boxShadow = '0 20px 50px rgba(0,0,0,0.4)';
+        infoPanel.style.display = 'none';
+        infoPanel.style.flexDirection = 'column';
+        infoPanel.style.cursor = 'default';
+
+        container.appendChild(img);
+        container.appendChild(infoPanel);
+        lightbox.appendChild(container);
+
+        // Botón de cerrar superior
+        let closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+        closeBtn.style.position = 'absolute';
+        closeBtn.style.top = '25px';
+        closeBtn.style.right = '35px';
+        closeBtn.style.background = 'transparent';
+        closeBtn.style.color = 'white';
+        closeBtn.style.border = 'none';
+        closeBtn.style.fontSize = '35px';
+        closeBtn.style.cursor = 'pointer';
+        lightbox.appendChild(closeBtn);
+
+        document.body.appendChild(lightbox);
+    }
+
+    let imgEl = document.getElementById('lightbox-img-gc');
+    imgEl.src = imgSrc;
+    imgEl.style.transform = 'scale(0.8)';
+
+    let infoPanel = document.getElementById('lightbox-info-panel-gc');
+
+    if (p) {
+        const esModoCaja = (modoVistaGlobal === 'caja');
+        const cantCaja = p.CantidadGrup || 12;
+        const isAgotado = esModoCaja ? (p.StockNum < cantCaja && p.StockNum < 999) : p.StockNum <= 0;
+        const precioUsdDin = esModoCaja ? p.PrecioCajaUsd : p.PrecioStr;
+        const precioBsDin = esModoCaja ? p.PrecioCajaBsStr : p.PrecioBsStr;
+        const precioNum = esModoCaja ? p.PrecioCajaNum : p.PrecioNum;
+        const nombreB64 = codificarNombre(p.Nombre);
+
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const bgColor = isDarkMode ? '#1f2937' : 'var(--color-card, #ffffff)';
+        const textColor = isDarkMode ? '#F9FAFB' : 'var(--color-text, #111827)';
+        const textMutedColor = isDarkMode ? '#D1D5DB' : 'var(--color-text-muted, #4B5563)';
+        const primaryColor = isDarkMode ? '#60A5FA' : 'var(--color-primary, #1E3A8A)';
+        const itemBgColor = isDarkMode ? '#374151' : 'var(--item-bg, #F3F4F6)';
+        const borderColor = isDarkMode ? '#4B5563' : 'var(--color-border, #E5E7EB)';
+
+        const descText = p.DescAdicional && p.DescAdicional.trim() !== '' ? p.DescAdicional : 'Sin descripción adicional.';
+        const isDescLong = descText.length > 120;
+        const descId = `lightbox-desc-${p.codigo}`;
+        const descHtml = isDescLong
+            ? `<div id="${descId}" style="grid-column: 1 / -1; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${descText}</div>
+               <div style="grid-column: 1 / -1; text-align: right; margin-top: -4px;">
+                   <button onclick="document.getElementById('${descId}').style.display='block'; this.style.display='none';" style="background: transparent; border: none; color: ${primaryColor}; font-size: 11px; font-weight: bold; cursor: pointer; padding: 0; text-decoration: underline;">Ver más</button>
+               </div>`
+            : `<div style="grid-column: 1 / -1; line-height: 1.4;">${descText}</div>`;
+
+        infoPanel.style.backgroundColor = bgColor;
+
+        infoPanel.innerHTML = `
+            <h3 style="margin: 0 0 10px 0; font-size: 20px; font-weight: bold; color: ${textColor}; line-height: 1.2;">${p.Nombre}</h3>
+            <div style="display: flex; flex-direction: column; margin-bottom: 20px;">
+                <span style="font-size: 24px; font-weight: 900; color: ${primaryColor}; line-height: 1;">$${precioUsdDin}</span>
+                <span style="font-size: 14px; color: ${textMutedColor};">${precioBsDin} Bs</span>
+            </div>
+            
+            <div style="background: ${itemBgColor}; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 5px;">Ficha Técnica</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; color: ${textMutedColor};">
+                    <div style="font-weight: 600;">Código:</div><div style="word-break: break-all;">${p.codigo || '-'}</div>
+                    <div style="font-weight: 600;">Medida:</div><div>${p.Medida || '-'}</div>
+                    <div style="font-weight: 600;">Unidades por caja:</div><div>${p.CantidadGrup || 12}</div>
+                    <div style="grid-column: 1 / -1; font-weight: 600; margin-top: 4px;">Descripción:</div>
+                    ${descHtml}
+                </div>
+            </div>
+            
+            <button class="btn-enviar ${isAgotado ? 'disabled' : ''}" style="width: 100%; margin-top: auto; border-radius: var(--radius-full, 9999px); ${isAgotado ? '' : 'background: var(--color-primary);'}" ${isAgotado ? 'disabled' : `onclick="agregarAlCarritoB64('${nombreB64}', ${precioNum}, this, false, '${imgSrc}', ${esModoCaja});"`}>
+                <i class="fa-solid fa-cart-shopping"></i> ${isAgotado ? 'Agotado' : 'Agregar al carrito'}
+            </button>
+        `;
+
+        infoPanel.style.display = 'flex';
+        imgEl.style.maxWidth = '55vw';
+    } else {
+        infoPanel.style.display = 'none';
+        imgEl.style.maxWidth = '90vw';
+    }
+
+    lightbox.style.display = 'flex';
+    // Forzar redibujado para que la animación funcione
+    lightbox.offsetHeight;
+    lightbox.style.opacity = '1';
+    imgEl.style.transform = 'scale(1)';
 };

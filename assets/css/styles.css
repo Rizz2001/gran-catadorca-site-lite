@@ -939,6 +939,70 @@ body.dark-mode .total-usd {
     height: 100%;
 }
 
+/* --- MEJORAS PROFESIONALES DE FICHA DE PRODUCTO (SOLO PC) --- */
+@media (min-width: 1024px) {
+    .producto-card {
+        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.3s ease;
+        border-radius: 12px;
+        background: var(--color-card, #ffffff);
+        overflow: hidden;
+        /* Evita que la imagen se salga al hacer zoom */
+        will-change: transform;
+    }
+
+    .producto-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+        border-color: var(--color-primary, #1E3A8A);
+        z-index: 2;
+        /* Lo eleva sobre otras tarjetas */
+    }
+
+    /* Ajuste de sombra y borde para el Modo Oscuro */
+    body.dark-mode .producto-card:hover {
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+        border-color: #60A5FA;
+    }
+
+    /* Efecto Zoom sutil en la imagen */
+    .producto-card .product-img-container img {
+        transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        cursor: zoom-in;
+    }
+
+    .producto-card:hover .product-img-container img {
+        transform: scale(1.08);
+    }
+
+    /* Ocultar el corazón hasta que se haga hover (salvo que ya sea favorito) */
+    .producto-card .btn-fav:not(.active) {
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.3s ease;
+    }
+
+    .producto-card:hover .btn-fav {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    /* Resaltar dinámicamente el botón de agregar al carrito */
+    .producto-card .btn-add-cart {
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .producto-card:hover .btn-add-cart {
+        background-color: var(--color-primary, #1E3A8A);
+        color: #ffffff;
+        transform: scale(1.1);
+    }
+
+    body.dark-mode .producto-card:hover .btn-add-cart {
+        background-color: #60A5FA;
+        color: #0B132B;
+    }
+}
+
 /* Aspecto de imagen cuadrado estricto para que se adapte sin deformarse */
 .product-img-container {
     aspect-ratio: 1 / 1 !important;
@@ -1105,4 +1169,40 @@ body.dark-mode #search-suggestions {
     background: #121E3F;
     border-color: #1E293B;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* --- LIGHTBOX RESPONSIVE (MÓVIL Y TABLET) --- */
+@media (max-width: 992px) {
+    #lightbox-container-gc {
+        flex-direction: column !important;
+        gap: 15px !important;
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+        padding: 15px 0 !important;
+        justify-content: flex-start !important;
+    }
+
+    #lightbox-img-gc {
+        max-width: 90vw !important;
+        max-height: 45vh !important;
+    }
+
+    #lightbox-info-panel-gc {
+        width: 90vw !important;
+        min-width: 280px !important;
+        padding: 15px !important;
+    }
+
+    #image-lightbox-gc>button {
+        top: 10px !important;
+        right: 15px !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        border-radius: 50% !important;
+        width: 40px !important;
+        height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 24px !important;
+    }
 }
