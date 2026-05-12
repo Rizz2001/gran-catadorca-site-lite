@@ -308,26 +308,33 @@ body.dark-mode .age-box {
 
 .search-pill {
   background-color: var(--color-bg);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
-  padding: 8px 15px;
-  transition: border-color 0.2s;
+  padding: 10px 20px;
+  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
   border: 1px solid var(--color-border);
   position: relative;
   width: 100%;
-  max-width: 500px;
+  max-width: 420px;
 }
 
 .search-pill:focus-within {
   background-color: var(--color-white);
   border-color: var(--color-primary);
+  box-shadow: 0 8px 25px rgba(30, 58, 138, 0.15);
+  max-width: 550px;
+}
+
+.search-pill:focus-within .search-icon {
+  color: var(--color-primary);
 }
 
 .search-icon {
   color: var(--color-text-muted);
   font-size: 15px;
   margin-right: 12px;
+  transition: color 0.3s;
 }
 
 .search-pill input {
@@ -473,6 +480,12 @@ body.dark-mode .search-pill {
 body.dark-mode .search-pill:focus-within {
   background-color: #1f2937;
   border-color: var(--color-accent);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.12);
+  max-width: 550px;
+}
+
+body.dark-mode .search-pill:focus-within .search-icon {
+  color: var(--color-accent);
 }
 
 body.dark-mode .search-pill input {
@@ -1446,6 +1459,8 @@ body.dark-mode .cart-item-img {
   font-size: 12px;
   font-weight: bold;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .loader-container {
@@ -1562,6 +1577,10 @@ body.dark-mode .cart-header .panel-title {
 
   .search-pill {
     width: 100%;
+    max-width: 100%;
+  }
+
+  .search-pill:focus-within {
     max-width: 100%;
   }
 

@@ -613,6 +613,14 @@ function enviarPedido() {
             msg += `💵 _Paga con $${pago.toFixed(2)}_\n🟢 _Requiere vuelto: $${(pago - appState.totalCarrito).toFixed(2)}_\n`;
         }
     } else {
+        if (metodo === 'Pago Movil' || metodo === 'PagoMovil') {
+            let refPm = document.getElementById('refPagoMovil') ? document.getElementById('refPagoMovil').value.trim() : '';
+            if (refPm) msg += `🧾 *Referencia:* ${refPm}\n`;
+        } else if (metodo === 'Zelle') {
+            let refZelle = document.getElementById('refZelle') ? document.getElementById('refZelle').value.trim() : '';
+            if (refZelle) msg += `👤 *Titular Zelle:* ${refZelle}\n`;
+        }
+
         msg += `📎 _[Capture adjunto en el siguiente mensaje]_\n`;
     }
 
@@ -623,9 +631,21 @@ function enviarPedido() {
     appState.carrito = {};
     guardarCarritoLS();
     actualizarCartCount();
-    cerrarModal('modal-cart', 'nav-home');
 
-    window.open(`https://wa.me/584245496366?text=${encodeURIComponent(msg)}`, '_blank');
+    // Feedback visual en el botón antes de redirigir
+    let btnEnviar = document.getElementById('btn-whatsapp');
+    let originalHTML = btnEnviar.innerHTML;
+    btnEnviar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparando WhatsApp...';
+    btnEnviar.classList.add('disabled');
+    btnEnviar.disabled = true;
+
+    setTimeout(() => {
+        window.open(`https://wa.me/584245496366?text=${encodeURIComponent(msg)}`, '_blank');
+        cerrarModal('modal-cart', 'nav-home');
+        btnEnviar.innerHTML = originalHTML;
+        btnEnviar.classList.remove('disabled');
+        btnEnviar.disabled = false;
+    }, 800);
 }
 
 /** Helpers para base64 que se enlazan desde HTML de forma segura */
