@@ -193,11 +193,34 @@ async function obtenerArchivosExternos() {
                     contBanners.style.scrollBehavior = 'smooth';
                     listaBanners.forEach((img, idx) => {
                         let loadingAttr = idx === 0 ? '' : 'loading="lazy"';
-                        contBanners.innerHTML += `<div class="promo-banner" style="min-width: 100%; flex-shrink: 0;"><img src="assets/banners/${img}" alt="Promo" style="width: 100%; border-radius: 12px; display: block;" ${loadingAttr} onerror="this.parentElement.style.display='none'"></div>`;
+                        let activeClass = idx === 0 ? 'active-banner' : '';
+                        contBanners.innerHTML += `<div class="promo-banner ${activeClass}"><img src="assets/banners/${img}" alt="Promo" style="border-radius: 12px; display: block;" ${loadingAttr} onerror="this.parentElement.style.display='none'"></div>`;
                     });
+
+                    // Observador para la transición de atenuación al hacer scroll
+                    const observer = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                entry.target.classList.add('active-banner');
+                            } else {
+                                entry.target.classList.remove('active-banner');
+                            }
+                        });
+                    }, { root: contBanners, threshold: 0.55 });
+                    Array.from(contBanners.children).forEach(banner => observer.observe(banner));
+
                     let slideIndex = 0;
                     if (window.bannersTimer) clearInterval(window.bannersTimer);
-                    window.bannersTimer = setInterval(() => { let totalSlides = contBanners.children.length; if (totalSlides > 1) { slideIndex++; if (slideIndex >= totalSlides) slideIndex = 0; contBanners.scrollTo({ left: contBanners.clientWidth * slideIndex, behavior: 'smooth' }); } }, 3000);
+                    window.bannersTimer = setInterval(() => {
+                        let totalSlides = contBanners.children.length;
+                        if (totalSlides > 1) {
+                            slideIndex++;
+                            if (slideIndex >= totalSlides) slideIndex = 0;
+                            let bannerWidth = contBanners.children[0].offsetWidth;
+                            let gap = parseInt(window.getComputedStyle(contBanners).gap) || 0;
+                            contBanners.scrollTo({ left: (bannerWidth + gap) * slideIndex, behavior: 'smooth' });
+                        }
+                    }, 3000);
                 }
             }
         } catch (error) { console.log("Sin banners.txt"); }
@@ -736,8 +759,10 @@ function debounceBusqueda(event) {
         // Lógica para Escáner de Códigos de Barras: Si se presiona Enter y hay 1 solo resultado, abrirlo.
         if (teclaPresionada === 'Enter' && productosFiltradosGlobal && productosFiltradosGlobal.length === 1) {
             cerrarSugerencias();
-            if (typeof abrirDetalleProducto === 'function') {
-                abrirDetalleProducto(productosFiltradosGlobal[0].codigo);
+            if (typeof abrirImagenLightbox === 'function') {
+                let p = productosFiltradosGlobal[0];
+                let imgSrc = p.ImagenUrl ? p.ImagenUrl : `assets/img/productos/${p.codigo}.webp`;
+                abrirImagenLightbox(imgSrc, p.codigo);
             }
         }
     }, 280);

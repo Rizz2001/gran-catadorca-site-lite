@@ -242,13 +242,11 @@
 
 @media (min-width: 768px) {
     .tools-container {
-        display: grid;
-        gap: 15px;
+        display:
     }
-}
 
-@media (min-width: 1024px) {
-    .productos-grid {
-        grid-template-columns: repeat(4, 1fr);
+    @media (min-width: 1024px) {
+        .productos-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
     }
-}

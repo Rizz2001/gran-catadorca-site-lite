@@ -247,8 +247,31 @@ function limpiarCacheAdmin() {
 function mostrarToast(msg) { const cont = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = msg; cont.appendChild(t); setTimeout(() => t.remove(), 2500); }
 
 // --- VISTAS Y CATEGORÍAS ---
-function cambiarModoVista(modo) { modoVistaGlobal = modo; document.getElementById('btn-modo-unidad').classList.remove('active'); document.getElementById('btn-modo-caja').classList.remove('active'); document.getElementById('btn-modo-' + modo).classList.add('active'); aplicarFiltros(); }
-function inyectarInterruptor() { let cont = document.querySelector('.tools-container'); if (cont && !document.getElementById('toggle-modo-global')) { let div = document.createElement('div'); div.id = 'toggle-modo-global'; div.className = 'toggle-modo-container'; div.innerHTML = `<div class="btn-modo active" id="btn-modo-unidad" onclick="cambiarModoVista('unidad')">🍾 Por Unidad</div><div class="btn-modo" id="btn-modo-caja" onclick="cambiarModoVista('caja')">📦 Por Caja</div>`; cont.insertBefore(div, cont.firstChild); } }
+function cambiarModoVista(modo) {
+    modoVistaGlobal = modo;
+    document.getElementById('btn-modo-unidad').classList.remove('active');
+    document.getElementById('btn-modo-caja').classList.remove('active');
+    document.getElementById('btn-modo-' + modo).classList.add('active');
+    aplicarFiltros();
+}
+
+function inyectarInterruptor() {
+    let cont = document.querySelector('.tools-container');
+    if (cont && !document.getElementById('toggle-modo-global')) {
+        let div = document.createElement('div');
+        div.id = 'toggle-modo-global';
+        div.className = 'toggle-modo-container';
+        div.innerHTML = `<div class="btn-modo active" id="btn-modo-unidad" onclick="cambiarModoVista('unidad')">🍾 Por Unidad</div><div class="btn-modo" id="btn-modo-caja" onclick="cambiarModoVista('caja')">📦 Por Caja</div>`;
+        cont.insertBefore(div, cont.firstChild);
+    }
+
+    // Inyectar Tooltip e Icono a la opción de Ver Agotados
+    let chkAgotados = document.querySelector('.chk-agotados');
+    if (chkAgotados && !document.getElementById('info-agotados-icon')) {
+        chkAgotados.setAttribute('data-tooltip', 'Muestra también los productos temporalmente sin stock');
+        chkAgotados.insertAdjacentHTML('beforeend', `<i id="info-agotados-icon" class="fa-solid fa-circle-info" style="color: var(--color-text-muted); font-size: 12px; margin-left: 2px;"></i>`);
+    }
+}
 
 function getIconForCategory(cat) {
     if (!cat) return 'fa-box-open';
@@ -638,7 +661,7 @@ function crearHTMLProducto(p) {
             
             ${badgeHTML}
             
-            <div onclick="abrirDetalleProducto('${p.codigo}')" onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); abrirDetalleProducto('${p.codigo}'); }" style="cursor: pointer; display: flex; flex-direction: column; flex-grow: 1;" role="button" tabindex="0" aria-label="Ver detalles de ${p.Nombre}">
+            <div onclick="abrirImagenLightbox('${imgSrc}', '${p.codigo}')" onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); abrirImagenLightbox('${imgSrc}', '${p.codigo}'); }" style="cursor: pointer; display: flex; flex-direction: column; flex-grow: 1;" role="button" tabindex="0" aria-label="Ver detalles de ${p.Nombre}">
                 <div class="product-img-container skeleton-box" style="display: flex; justify-content: center; align-items: center; border-radius: 8px;">
                     ${galeriasHTML}
                 </div>
@@ -664,69 +687,6 @@ function crearHTMLProducto(p) {
     `;
 }
 
-async function abrirDetalleProducto(codigo) {
-    let p = inventario.find(x => x.codigo === codigo);
-    if (!p) return;
-
-    const esModoCaja = (modoVistaGlobal === 'caja');
-    const cantCaja = p.CantidadGrup || 12;
-    const isAgotado = esModoCaja ? (p.StockNum < cantCaja && p.StockNum < 999) : p.StockNum <= 0;
-    const precioUsdDin = esModoCaja ? p.PrecioCajaUsd : p.PrecioStr;
-    const precioBsDin = esModoCaja ? p.PrecioCajaBsStr : p.PrecioBsStr;
-    const precioNum = esModoCaja ? p.PrecioCajaNum : p.PrecioNum;
-    const nombreB64 = codificarNombre(p.Nombre);
-
-    document.getElementById('detalle-titulo').innerText = p.Nombre;
-    document.getElementById('detalle-precio-usd').innerText = `$${precioUsdDin}`;
-    document.getElementById('detalle-precio-bs').innerText = `${precioBsDin} Bs`;
-
-    let btnShare = document.getElementById('detalle-btn-share');
-    if (btnShare) btnShare.onclick = () => compartirProducto(p.Nombre, precioUsdDin);
-
-    let stockBadge = document.getElementById('detalle-stock');
-    if (isAgotado) {
-        if (p.StockNum <= 0) {
-            stockBadge.innerText = "AGOTADO";
-        } else {
-            stockBadge.innerText = `Solo ${p.StockNum} und (Insuficiente p/ caja)`;
-        }
-        stockBadge.style.background = "rgba(234, 67, 53, 0.1)"; stockBadge.style.color = "#ea4335";
-    } else {
-        let stockText = (p.StockStr || '').toString().toLowerCase() === 'disponible' || p.StockNum >= 999 ? 'Stock Disponible' : `${p.StockNum} und disponibles`;
-        stockBadge.innerText = stockText;
-        if (p.StockNum > 0 && p.StockNum <= 5 && (p.StockStr || '').toString().toLowerCase() !== 'disponible' && p.StockNum < 999) {
-            stockBadge.style.background = "rgba(234, 67, 53, 0.1)"; stockBadge.style.color = "#ea4335";
-        } else {
-            stockBadge.style.background = "rgba(37, 211, 102, 0.1)"; stockBadge.style.color = "#25D366";
-        }
-    }
-
-    let imgContainer = document.getElementById('detalle-img-container');
-    imgContainer.classList.add('skeleton-box');
-    let imgUrl = p.ImagenUrl ? p.ImagenUrl : `assets/img/productos/${p.codigo}.webp`;
-    let attempts = p.ImagenUrl ? 0 : 1;
-    let galeriasHTML = `<img loading="lazy" decoding="async" width="300" height="300" src="${imgUrl}" class="zoomable-img" data-codigo="${p.codigo}" data-categoria="${p.Cat}" data-index="1" data-attempts="${attempts}" onerror="imgFallbackFolder(this)" alt="Vista 1" style="scroll-snap-align: start; flex-shrink: 0; width: 100%; height: 100%; object-fit: contain; cursor: zoom-in;" onload="this.style.display='block'; this.parentElement.classList.remove('skeleton-box');" onmousemove="if(typeof handleZoom==='function') handleZoom(event, this)" onmouseleave="if(typeof resetZoom==='function') resetZoom(this)" onclick="abrirImagenLightbox(this.src, '${p.codigo}')">`;
-    imgContainer.innerHTML = galeriasHTML;
-
-    let btnContainer = document.getElementById('detalle-btn-add');
-    let imgSrc = p.ImagenUrl ? p.ImagenUrl : `assets/img/productos/${p.codigo}.webp`;
-    if (isAgotado) {
-        let txtBtn = p.StockNum <= 0 ? 'Agotado' : 'Stock Insuficiente';
-        btnContainer.innerHTML = `<button class="btn-enviar" style="background: var(--color-border); color: var(--color-text-muted); cursor: not-allowed;" disabled>${txtBtn}</button>`;
-    } else {
-        btnContainer.innerHTML = `<button class="btn-enviar" onclick="agregarAlCarritoB64('${nombreB64}', ${precioNum}, this, false, '${imgSrc}', ${esModoCaja}); document.getElementById('modal-producto').style.display='none';" style="background: var(--color-primary);"><i class="fa-solid fa-cart-shopping"></i> Agregar al carrito</button>`;
-    }
-
-    let descContainer = document.getElementById('detalle-descripcion');
-    document.getElementById('modal-producto').style.display = 'flex';
-
-    if (p.DescAdicional && p.DescAdicional.trim() !== '') {
-        descContainer.innerText = p.DescAdicional;
-    } else {
-        descContainer.innerText = "Sin descripción adicional.";
-    }
-}
-
 function renderizarPagina() {
     const cont = document.getElementById('lista-productos');
     if (paginaActual === 1) cont.innerHTML = '';
@@ -745,8 +705,10 @@ function renderizarPagina() {
 
             cont.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: var(--texto-claro);">
-                    <i class="fa-solid fa-wine-bottle" style="font-size: 60px; opacity: 0.3; margin-bottom: 15px;"></i>
-                    <h3 style="color: var(--texto-oscuro); font-size: 16px; font-weight: bold;">¿Aún no tienes sed?</h3>
+                    <svg width="100" height="100" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.1; margin-bottom: 15px;">
+                        <path d="M15.0001 12.0001H15.0101M12.0001 12.0001H12.0101M9.00006 12.0001H9.01006M5.53105 4.53105C5.82394 4.23816 6.17606 4 6.55006 4H17.45C17.824 4 18.1761 4.23816 18.469 4.53105C18.7619 4.82394 19 5.17606 19 5.55005V17.45C19 17.824 18.7619 18.1761 18.469 18.469C18.1761 18.7619 17.824 19 17.45 19H6.55006C6.17606 19 5.82394 18.7619 5.53105 18.469C5.23816 18.1761 5.00006 17.824 5.00006 17.45V5.55005C5.00006 5.17606 5.23816 4.82394 5.53105 4.53105ZM10.0001 21.0001V20.0001M14.0001 21.0001V20.0001M3.00006 8.00005H4.00006M3.00006 12.0001H4.00006M3.00006 16.0001H4.00006M20.0001 8.00005H21.0001M20.0001 12.0001H21.0001M20.0001 16.0001H21.0001M8.00006 3.00005V4.00005M12.0001 3.00005V4.00005M16.0001 3.00005V4.00005" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="var(--color-text)"/>
+                    </svg>
+                    <h3 style="color: var(--texto-oscuro); font-size: 16px; font-weight: bold;">No encontramos esa botella</h3>
                     <p style="font-size: 13px; margin-top: 5px;">No encontramos botellas con esa descripción.${msjExtra}</p>
                     <button onclick="irInicio()" class="cat-btn active" style="margin: 20px auto 0 auto; padding: 10px 20px;">Ver todo el catálogo</button>
                 </div>`;

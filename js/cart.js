@@ -348,8 +348,10 @@ function renderizarCarrito() {
     if (Object.keys(appState.carrito).length === 0) {
         lista.innerHTML = `
             <div style="text-align: center; padding: 60px 20px; color: var(--color-text-muted); display: flex; flex-direction: column; align-items: center;">
-                <div style="width: 80px; height: 80px; background: var(--item-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;"><i class="fa-solid fa-basket-shopping" style="font-size: 32px; color: var(--color-text-muted); opacity: 0.5;"></i></div>
-                <h3 style="color: var(--color-text); font-size: 18px; font-weight: 800; letter-spacing: -0.5px;">Tu carrito está vacío</h3>
+                <svg width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.15; margin-bottom: 15px;">
+                    <path d="M8 16.0001H16M12 12.0001V20.0001M4.91355 4.08203L5.0291 3.55703C5.25375 2.64533 6.05952 2.00005 7.0001 2.00005H17.0001C17.9407 2.00005 18.7465 2.64533 18.9711 3.55703L20.0001 8.00006M4.91355 4.08203L4.50006 6.00006C3.42598 6.00006 2.53003 6.89591 2.53003 8.00006V17.0001C2.53003 18.1046 3.42598 19.0001 4.53003 19.0001H19.4701C20.5742 19.0001 21.4701 18.1046 21.4701 17.0001V8.00006C21.4701 6.89591 20.5742 6.00006 19.5001 6.00006L19.0865 4.08203" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="var(--color-text)"/>
+                </svg>
+                <h3 style="color: var(--color-text); font-size: 18px; font-weight: 800; letter-spacing: -0.5px;">Tu bodega está vacía</h3>
                 <p style="font-size: 14px; margin-top: 8px; line-height: 1.5;">Agrega unas botellas para que empiece la fiesta.</p>
                 <button onclick="cerrarModal('modal-cart', 'nav-home')" class="btn-enviar" style="width: auto; padding: 12px 30px; margin-top: 25px; border-radius: var(--radius-full);">Explorar Catálogo</button>
             </div>`;
