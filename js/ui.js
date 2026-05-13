@@ -906,74 +906,43 @@ window.abrirImagenLightbox = function (imgSrc, codigo) {
     if (!lightbox) {
         lightbox = document.createElement('div');
         lightbox.id = 'image-lightbox-gc';
-        lightbox.style.position = 'fixed';
-        lightbox.style.top = '0';
-        lightbox.style.left = '0';
-        lightbox.style.width = '100vw';
-        lightbox.style.height = '100vh';
-        lightbox.style.backgroundColor = 'rgba(11, 19, 43, 0.92)'; // Azul marino muy oscuro
-        lightbox.style.zIndex = '9999';
-        lightbox.style.display = 'flex';
-        lightbox.style.justifyContent = 'center';
-        lightbox.style.alignItems = 'center';
-        lightbox.style.cursor = 'zoom-out';
-        lightbox.style.backdropFilter = 'blur(8px)';
-        lightbox.style.opacity = '0';
-        lightbox.style.transition = 'opacity 0.3s ease';
 
-        // Cierra el visor al hacer clic en cualquier parte, excepto en el panel de info
+        // Cierra el visor al hacer clic en el fondo oscuro
         lightbox.onclick = function (e) {
-            if (e.target.closest('#lightbox-info-panel-gc')) return;
+            if (e.target.closest('#lightbox-card-gc')) return;
             lightbox.style.opacity = '0';
             setTimeout(() => lightbox.style.display = 'none', 300);
         };
 
         let container = document.createElement('div');
         container.id = 'lightbox-container-gc';
-        container.style.display = 'flex';
-        container.style.flexDirection = 'row';
-        container.style.maxWidth = '90%';
-        container.style.maxHeight = '90%';
-        container.style.gap = '30px';
-        container.style.alignItems = 'center';
-        container.style.justifyContent = 'center';
+
+        let card = document.createElement('div');
+        card.id = 'lightbox-card-gc';
+
+        let imgWrapper = document.createElement('div');
+        imgWrapper.id = 'lightbox-img-wrapper-gc';
 
         let img = document.createElement('img');
         img.id = 'lightbox-img-gc';
-        img.style.maxWidth = '60vw';
-        img.style.maxHeight = '85vh';
-        img.style.objectFit = 'contain';
-        img.style.borderRadius = '12px';
-        img.style.boxShadow = '0 20px 50px rgba(0,0,0,0.6)';
-        img.style.transform = 'scale(0.8)';
-        img.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
 
         let infoPanel = document.createElement('div');
         infoPanel.id = 'lightbox-info-panel-gc';
-        infoPanel.style.borderRadius = '16px';
-        infoPanel.style.padding = '25px';
-        infoPanel.style.width = '350px';
-        infoPanel.style.minWidth = '300px';
-        infoPanel.style.boxShadow = '0 20px 50px rgba(0,0,0,0.4)';
-        infoPanel.style.display = 'none';
-        infoPanel.style.flexDirection = 'column';
-        infoPanel.style.cursor = 'default';
 
-        container.appendChild(img);
-        container.appendChild(infoPanel);
+        imgWrapper.appendChild(img);
+        card.appendChild(imgWrapper);
+        card.appendChild(infoPanel);
+        container.appendChild(card);
         lightbox.appendChild(container);
 
         // Botón de cerrar superior
         let closeBtn = document.createElement('button');
+        closeBtn.id = 'lightbox-close-btn-gc';
         closeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-        closeBtn.style.position = 'absolute';
-        closeBtn.style.top = '25px';
-        closeBtn.style.right = '35px';
-        closeBtn.style.background = 'transparent';
-        closeBtn.style.color = 'white';
-        closeBtn.style.border = 'none';
-        closeBtn.style.fontSize = '35px';
-        closeBtn.style.cursor = 'pointer';
+        closeBtn.onclick = function () {
+            lightbox.style.opacity = '0';
+            setTimeout(() => lightbox.style.display = 'none', 300);
+        };
         lightbox.appendChild(closeBtn);
 
         document.body.appendChild(lightbox);
@@ -984,6 +953,8 @@ window.abrirImagenLightbox = function (imgSrc, codigo) {
     imgEl.style.transform = 'scale(0.8)';
 
     let infoPanel = document.getElementById('lightbox-info-panel-gc');
+    let cardEl = document.getElementById('lightbox-card-gc');
+    let imgWrapper = document.getElementById('lightbox-img-wrapper-gc');
 
     if (p) {
         const esModoCaja = (modoVistaGlobal === 'caja');
@@ -1012,7 +983,8 @@ window.abrirImagenLightbox = function (imgSrc, codigo) {
                </div>`
             : `<div style="grid-column: 1 / -1; line-height: 1.4;">${descText}</div>`;
 
-        infoPanel.style.backgroundColor = bgColor;
+        cardEl.style.backgroundColor = bgColor;
+        imgWrapper.style.backgroundColor = itemBgColor;
 
         infoPanel.innerHTML = `
             <h3 style="margin: 0 0 10px 0; font-size: 20px; font-weight: bold; color: ${textColor}; line-height: 1.2;">${p.Nombre}</h3>
@@ -1038,10 +1010,10 @@ window.abrirImagenLightbox = function (imgSrc, codigo) {
         `;
 
         infoPanel.style.display = 'flex';
-        imgEl.style.maxWidth = '55vw';
     } else {
         infoPanel.style.display = 'none';
-        imgEl.style.maxWidth = '90vw';
+        cardEl.style.backgroundColor = 'transparent';
+        imgWrapper.style.backgroundColor = 'transparent';
     }
 
     lightbox.style.display = 'flex';
