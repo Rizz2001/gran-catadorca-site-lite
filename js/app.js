@@ -1,6 +1,6 @@
 let inventario = [];
 let favoritos = JSON.parse(localStorage.getItem('gc_favs')) || [];
-let tasaOficial = 36.25; let tasaEuro = 40.00; let categoriaActual = 'LICORES'; let debounceTimer;
+let tasaOficial = 36.25; let tasaEuro = 40.00; let categoriaActual = 'Todos'; let debounceTimer;
 let isTiendaAbierta = true; let codigosRecomendados = []; let siempreDisponibles = [];
 let productosFiltradosGlobal = []; let itemsPorPagina = 30; let paginaActual = 1;
 
@@ -11,6 +11,7 @@ let subcategoriaActual = null;
 
 // Asegurar que appState exista y tenga su estructura base
 window.appState = window.appState || { inventario: [], filtros: {}, carrito: {} };
+window.appState.isTiendaAbierta = isTiendaAbierta; // Corrección: Exponer variable al appState para que cart.js pueda leerla
 
 // Barra de progreso superior (API)
 function updateApiProgress(percent, isError = false) {
@@ -78,18 +79,15 @@ function parseFoxdataNumber(val) {
 
 if (localStorage.getItem('gc_dark') === 'true') document.body.classList.add('dark-mode');
 
-if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => { reg.update(); console.log("PWA Ok"); }).catch(err => console.log("SW Error", err)); }); }
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => { reg.update(); }).catch(() => { }); }); }
 
 async function loadAppSettings() {
     try {
         const response = await fetch('data/config/settings.json?v=' + new Date().getTime());
         if (response.ok) {
             appSettings = await response.json();
-            console.log("⚙️ Configuraciones cargadas:", appSettings.useApi ? "API Activada" : "Usando Archivos Locales");
         }
-    } catch (error) {
-        console.log("⚠️ No se encontró settings.json, usando valores por defecto.");
-    }
+    } catch (error) { }
 }
 
 async function obtenerTasaDolar() {
@@ -102,7 +100,6 @@ async function obtenerTasaDolar() {
                 const tasaPromedio = data[0].promedio || data[0].precio || 36.25;
                 tasaOficial = parseFloat(tasaPromedio);
                 appState.tasaOficial = tasaOficial;
-                console.log(`💵 Tasa actualizada vía API: ${tasaOficial.toFixed(2)} Bs`);
                 // Guardar en localStorage para persistencia
                 localStorage.setItem('tasaDolar', tasaOficial.toString());
                 localStorage.setItem('tasaDolarTime', new Date().getTime().toString());
@@ -110,7 +107,6 @@ async function obtenerTasaDolar() {
             }
         }
     } catch (error) {
-        console.log("⚠️ Error obteniendo tasa de dolarapi:", error.message);
         // Intentar usando tasa.txt como fallback
         try {
             let resTasa = await fetch('data/config/tasa.txt?v=' + new Date().getTime());
@@ -118,19 +114,16 @@ async function obtenerTasaDolar() {
                 let texto = await resTasa.text();
                 tasaOficial = parseFloat(texto.trim().replace(',', '.'));
                 appState.tasaOficial = tasaOficial;
-                console.log(`📄 Tasa cargada desde archivo local: ${tasaOficial.toFixed(2)} Bs`);
                 localStorage.setItem('tasaDolar', tasaOficial.toString());
                 localStorage.setItem('tasaDolarTime', new Date().getTime().toString());
                 return true;
             }
         } catch (fallbackError) {
-            console.log("⚠️ Error cargando tasa local:", fallbackError.message);
             // Si hay tasa guardada en localStorage, usarla
             const tasaGuardada = localStorage.getItem('tasaDolar');
             if (tasaGuardada) {
                 tasaOficial = parseFloat(tasaGuardada);
                 appState.tasaOficial = tasaOficial;
-                console.log(`💾 Usando tasa en caché: ${tasaOficial.toFixed(2)} Bs`);
                 return true;
             }
         }
@@ -146,17 +139,73 @@ async function obtenerTasaEuro() {
             if (data && Array.isArray(data) && data.length > 0) {
                 const tasaPromedio = data[0].promedio || data[0].precio || 40.00;
                 tasaEuro = parseFloat(tasaPromedio);
-                console.log(`💶 Tasa Euro API: ${tasaEuro.toFixed(2)} Bs`);
                 localStorage.setItem('tasaEuro', tasaEuro.toString());
                 return true;
             }
         }
     } catch (error) {
-        console.log("⚠️ Error obteniendo tasa euro:", error.message);
         const tasaGuardada = localStorage.getItem('tasaEuro');
         if (tasaGuardada) tasaEuro = parseFloat(tasaGuardada);
     }
     return false;
+}
+
+async function cargarBannersLocales() {
+    try {
+        let resBan = await fetch('data/config/banners.txt?v=' + new Date().getTime());
+        if (resBan.ok) {
+            let textoBan = await resBan.text(); let listaBanners = textoBan.split(/[\n,]+/).map(b => b.trim()).filter(b => b !== "");
+            let contBanners = document.getElementById('contenedorBanners');
+            if (listaBanners.length > 0 && contBanners) {
+                contBanners.innerHTML = '';
+                const queryRaw = (document.getElementById('buscador')?.value || '').trim();
+                contBanners.style.display = (categoriaActual === 'Todos' && queryRaw.length === 0) ? 'flex' : 'none';
+                contBanners.style.overflowX = 'hidden';
+                contBanners.style.scrollBehavior = 'smooth';
+                listaBanners.forEach((img, idx) => {
+                    let loadingAttr = idx === 0 ? '' : 'loading="lazy"';
+                    let activeClass = idx === 0 ? 'active-banner' : '';
+                    contBanners.innerHTML += `<div class="promo-banner ${activeClass}"><img src="assets/banners/${img}" alt="Promo" style="border-radius: 12px; display: block;" ${loadingAttr} onerror="this.parentElement.style.display='none'"></div>`;
+                });
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('active-banner');
+                        } else {
+                            entry.target.classList.remove('active-banner');
+                        }
+                    });
+                }, { root: contBanners, threshold: 0.55 });
+                Array.from(contBanners.children).forEach(banner => observer.observe(banner));
+
+                let slideIndex = 0;
+                if (window.bannersTimer) clearInterval(window.bannersTimer);
+                window.bannersTimer = setInterval(() => {
+                    let totalSlides = contBanners.children.length;
+                    if (totalSlides > 1) {
+                        slideIndex++;
+                        if (slideIndex >= totalSlides) slideIndex = 0;
+                        let bannerWidth = contBanners.children[0].offsetWidth;
+                        let gap = parseInt(window.getComputedStyle(contBanners).gap) || 0;
+                        contBanners.scrollTo({ left: (bannerWidth + gap) * slideIndex, behavior: 'smooth' });
+                    }
+                }, 3000);
+            }
+        }
+    } catch (error) { }
+}
+
+async function cargarSiempreDisponiblesLocal() {
+    try {
+        let resDisp = await fetch('data/config/siempre_disponibles.txt?v=' + new Date().getTime());
+        if (resDisp.ok) {
+            let textoDisp = await resDisp.text();
+            let listaDisp = textoDisp.split(/[\n,]+/).map(b => b.trim()).filter(b => b !== "" && !b.startsWith("#"));
+            siempreDisponibles = [...new Set([...siempreDisponibles, ...listaDisp])];
+            appState.siempreDisponibles = siempreDisponibles;
+        }
+    } catch (error) { }
 }
 
 async function obtenerArchivosExternos() {
@@ -180,69 +229,8 @@ async function obtenerArchivosExternos() {
         promesasConfig.push(cargarConfiguracionDesdeAPI().catch(() => { }));
     }
 
-    promesasConfig.push((async () => {
-        try {
-            let resBan = await fetch('data/config/banners.txt?v=' + new Date().getTime());
-            if (resBan.ok) {
-                let textoBan = await resBan.text(); let listaBanners = textoBan.split(/[\n,]+/).map(b => b.trim()).filter(b => b !== "");
-                let contBanners = document.getElementById('contenedorBanners');
-                if (listaBanners.length > 0 && contBanners) {
-                    contBanners.innerHTML = '';
-                    const queryRaw = (document.getElementById('buscador')?.value || '').trim();
-                    contBanners.style.display = (categoriaActual === 'Todos' && queryRaw.length === 0) ? 'flex' : 'none';
-                    contBanners.style.overflowX = 'hidden';
-                    contBanners.style.scrollBehavior = 'smooth';
-                    listaBanners.forEach((img, idx) => {
-                        let loadingAttr = idx === 0 ? '' : 'loading="lazy"';
-                        let activeClass = idx === 0 ? 'active-banner' : '';
-                        contBanners.innerHTML += `<div class="promo-banner ${activeClass}"><img src="assets/banners/${img}" alt="Promo" style="border-radius: 12px; display: block;" ${loadingAttr} onerror="this.parentElement.style.display='none'"></div>`;
-                    });
-
-                    // Observador para la transición de atenuación al hacer scroll
-                    const observer = new IntersectionObserver((entries) => {
-                        entries.forEach(entry => {
-                            if (entry.isIntersecting) {
-                                entry.target.classList.add('active-banner');
-                            } else {
-                                entry.target.classList.remove('active-banner');
-                            }
-                        });
-                    }, { root: contBanners, threshold: 0.55 });
-                    Array.from(contBanners.children).forEach(banner => observer.observe(banner));
-
-                    let slideIndex = 0;
-                    if (window.bannersTimer) clearInterval(window.bannersTimer);
-                    window.bannersTimer = setInterval(() => {
-                        let totalSlides = contBanners.children.length;
-                        if (totalSlides > 1) {
-                            slideIndex++;
-                            if (slideIndex >= totalSlides) slideIndex = 0;
-                            let bannerWidth = contBanners.children[0].offsetWidth;
-                            let gap = parseInt(window.getComputedStyle(contBanners).gap) || 0;
-                            contBanners.scrollTo({ left: (bannerWidth + gap) * slideIndex, behavior: 'smooth' });
-                        }
-                    }, 3000);
-                }
-            }
-        } catch (error) { console.log("Sin banners.txt"); }
-    })());
-
-    // OPTIMIZACIÓN: Cargar lista de productos siempre disponibles localmente
-    promesasConfig.push((async () => {
-        try {
-            let resDisp = await fetch('data/config/siempre_disponibles.txt?v=' + new Date().getTime());
-            if (resDisp.ok) {
-                let textoDisp = await resDisp.text();
-                let listaDisp = textoDisp.split(/[\n,]+/).map(b => b.trim()).filter(b => b !== "" && !b.startsWith("#"));
-                // Combinamos con los que vengan de la API (si hay)
-                siempreDisponibles = [...new Set([...siempreDisponibles, ...listaDisp])];
-                appState.siempreDisponibles = siempreDisponibles;
-                console.log("📌 Códigos forzados a estar disponibles:", listaDisp.length);
-            }
-        } catch (error) {
-            console.log("Sin siempre_disponibles.txt local");
-        }
-    })());
+    promesasConfig.push(cargarBannersLocales());
+    promesasConfig.push(cargarSiempreDisponiblesLocal());
 
     await Promise.all(promesasConfig);
 }
@@ -269,13 +257,10 @@ async function cargarConfiguracionDesdeAPI() {
             appState.codigosRecomendados = codigosRecomendados;
             appState.siempreDisponibles = siempreDisponibles;
         }
-    } catch (e) {
-        console.log("⚠️ Error de conexión cargando configuraciones:", e.message);
-    }
+    } catch (e) { }
 }
 
 async function cargarInventario() {
-    console.log("🚀 Iniciando carga desde API SmartVentas...");
 
     if (typeof mostrarSkeletonCategorias === 'function') mostrarSkeletonCategorias();
     if (typeof mostrarSkeletonProductos === 'function') mostrarSkeletonProductos();
@@ -302,7 +287,6 @@ async function cargarInventario() {
         }, 800); // Retraso de 800ms para asegurar que las imágenes y la estructura se hayan pintado
 
     } catch (e) {
-        console.error("Error cargando inventario:", e);
         updateApiProgress(100, true);
         document.getElementById('lista-productos').innerHTML = `<div style="grid-column: span 2; text-align: center; padding: 30px; border: 1px solid red; border-radius: 10px;"><h3 style="color:red;">Error de Conexión</h3><p style="font-size:12px; margin-top:10px;">${e.message || 'Verifica la configuración de la API.'}</p></div>`;
     }
@@ -314,13 +298,11 @@ function iniciarAutoActualizacion() {
 
     // Ejecutar silenciosamente cada 1 minuto (60000 ms)
     window.autoSyncTimer = setInterval(async () => {
-        console.log("⏱️ Sincronizando con SmartVentas en segundo plano...");
         try {
             await cargarInventarioDesdeAPI();
             localStorage.setItem('gc_inv_time_v4', new Date().getTime().toString());
             aplicarFiltros(); // Refresca la vista automáticamente si detecta un cambio de precio/stock
         } catch (e) {
-            console.log("⚠️ Error en sincronización silenciosa:", e.message);
             updateApiProgress(100, true);
         }
     }, 60000);
@@ -328,7 +310,6 @@ function iniciarAutoActualizacion() {
 
 async function cargarExistenciasGlobales(proxyBaseUrl) {
     try {
-        console.log("📦 Consultando existencias de depósitos 01 y 03...");
         const [res01, res03] = await Promise.all([
             fetch(`${proxyBaseUrl}?endpoint=${encodeURIComponent('existencias/deposito/01')}`),
             fetch(`${proxyBaseUrl}?endpoint=${encodeURIComponent('existencias/deposito/03')}`)
@@ -351,10 +332,7 @@ async function cargarExistenciasGlobales(proxyBaseUrl) {
         if (res03.ok) procesarData(await res03.json());
 
         appState.stockMap = stockMap;
-        console.log(`📦 Existencias cargadas. Depósitos 01 y 03 combinados.`);
-    } catch (e) {
-        console.error("⚠️ Error cargando existencias globales:", e);
-    }
+    } catch (e) { }
 }
 
 async function cargarInventarioDesdeAPI() {
@@ -367,14 +345,12 @@ async function cargarInventarioDesdeAPI() {
             : 'functions/api/proxy.php';
 
     updateApiProgress(10);
-    console.log("📡 Consultando API mediante Proxy Cloudflare...");
 
     // --- 0 Y 1. DESCARGAR EXISTENCIAS Y GRUPOS EN PARALELO ---
     // Esto mejora el performance evitando que una petición bloquee a la otra
     const existenciasPromise = cargarExistenciasGlobales(proxyBaseUrl);
     let gruposPromise = fetch(`${proxyBaseUrl}?endpoint=gruposinv`).then(async res => {
         if (!res.ok && res.status >= 500) {
-            console.warn("⚠️ gruposinv falló, intentando con endpoint alternativo 'grupos'...");
             return fetch(`${proxyBaseUrl}?endpoint=grupos`);
         }
         return res;
@@ -421,10 +397,7 @@ async function cargarInventarioDesdeAPI() {
         });
 
         appState.gruposInventario = grupos;
-        console.log("📂 Grupos procesados correctamente:", grupos.length);
     } else {
-        console.warn("⚠️ La API respondió pero no se encontró un listado de grupos válido.", dataGrupos);
-
         // Si la API devolvió un objeto con mensaje de error, detener todo y mostrarlo en pantalla
         if (dataGrupos && !Array.isArray(dataGrupos) && Object.keys(dataGrupos).length > 0) {
             throw new Error(`SmartVentas devolvió un error: ${JSON.stringify(dataGrupos)}`);
@@ -450,9 +423,6 @@ async function cargarInventarioDesdeAPI() {
     // Fallback: Si no hay categoría actual o estamos en "Todos", cargamos el primero disponible
     if (!grupoInicial && grupos.length > 0) {
         grupoInicial = grupos[0];
-        // CORRECCIÓN: Actualizamos la categoría actual para que coincida con lo que descargamos y no se oculten
-        categoriaActual = grupoInicial.Nombre || grupoInicial.nombre || grupoInicial.Descripcion || grupoInicial.descripcion || grupoInicial.NombreGrupo || grupoInicial.desc_grupo || grupoInicial.DescGrupo || "Todos";
-        appState.filtros.categoriaActual = categoriaActual;
     }
 
     if (grupoInicial) {
@@ -473,6 +443,58 @@ async function cargarInventarioDesdeAPI() {
     cargarRestoDeGruposEnSegundoPlano(grupos);
 }
 
+// --- FUNCIONES DE MAPEO DE DATOS ---
+function formatearProductoApi(item, codGrupo, nombreGrupo, codSubgrupoFallback, nombreSubgrupoFallback, proxyBaseUrl) {
+    let precioRaw = item.precioVentDiv5 ?? item.precioVentDiv ?? item.PrecioVentDiv ?? 0;
+    let precioUsd = parseFoxdataNumber(precioRaw);
+
+    let cantidadGrupRaw = item.cantidadGrup ?? item.CantidadGrup ?? item.cant_caja ?? 12;
+    let cantidadGrup = parseFoxdataNumber(cantidadGrupRaw);
+    if (cantidadGrup <= 0) cantidadGrup = 12;
+
+    let precioGrupRaw = item.precioVentGrupDiv5 ?? item.precioVentGrupDiv ?? item.PrecioVentGrupDiv ?? (precioUsd * cantidadGrup);
+    let precioCajaNum = parseFoxdataNumber(precioGrupRaw);
+    if (precioCajaNum <= 0) precioCajaNum = precioUsd * cantidadGrup;
+
+    let codigo = item.codArticulo ?? item.codigo ?? item.Codigo ?? item.CodArticulo ?? item.cod_articulo ?? item.id ?? item.Id ?? "";
+
+    let stock = 0;
+    if (appState.stockMap && appState.stockMap.has(codigo)) {
+        stock = appState.stockMap.get(codigo);
+    } else {
+        let stockRaw = item.existencia ?? item.Existencia ?? item.stock ?? item.Stock ?? item.cantidad ?? item.Cantidad;
+        stock = parseFloat(stockRaw !== undefined && stockRaw !== null ? stockRaw : 10);
+    }
+
+    if (appState.siempreDisponibles && appState.siempreDisponibles.includes(codigo)) stock = 999;
+
+    let nombre = item.nombre ?? item.Nombre ?? item.descripcion ?? item.Descripcion ?? "Producto sin nombre";
+
+    let imagenUrl = item.imagenUrl ?? item.ImagenUrl ?? null;
+    if (imagenUrl && imagenUrl.startsWith('/')) {
+        imagenUrl = proxyBaseUrl + '?imagePath=' + encodeURIComponent(imagenUrl);
+    }
+
+    let codSubApi = (item.codSubgrupo ?? item.CodSubgrupo ?? item.codsubgrupo ?? item.cod_subgrupo ?? item.id_subgrupo ?? item.subgrupo ?? item.subcategoria ?? "").toString().trim();
+    let subCatIdFinal = codSubApi || codSubgrupoFallback || "";
+    let nombreSubFinal = item.desc_subgrupo ?? item.Desc_subgrupo ?? item.nombre_subgrupo ?? nombreSubgrupoFallback ?? subCatIdFinal;
+
+    return {
+        codigo: codigo, Nombre: nombre,
+        CatId: codGrupo, Cat: limpiarCategoria(nombreGrupo),
+        SubCatId: subCatIdFinal, SubCat: limpiarCategoria(nombreSubFinal),
+        PrecioStr: precioUsd.toFixed(2), PrecioNum: precioUsd,
+        PrecioBsStr: (precioUsd * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
+        PrecioCajaUsd: precioCajaNum.toFixed(2), PrecioCajaNum: precioCajaNum,
+        PrecioCajaBsStr: (precioCajaNum * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
+        StockNum: stock, StockStr: stock >= 999 ? "Disponible" : (stock > 0 ? stock.toString() : "0"),
+        TextoBusquedaLimpio: quitarAcentos(nombre) + " " + quitarAcentos(nombreGrupo) + " " + quitarAcentos(nombreSubFinal),
+        CantidadGrup: cantidadGrup, Medida: item.medida ?? item.Medida ?? "",
+        UnidadGrup: item.unidadGrup ?? item.UnidadGrup ?? "CAJA", UnidadSimple: item.unidadSimple ?? item.UnidadSimple ?? "UNIDAD",
+        ImagenUrl: imagenUrl, DescAdicional: item.descExtensa ?? item.DescExtensa ?? item.comentario ?? item.Comentario ?? item.notas ?? item.Notas ?? ""
+    };
+}
+
 async function cargarProductosPorGrupo(codGrupo, nombreGrupo) {
     if (appState.gruposCargados && appState.gruposCargados.includes(codGrupo)) return false; // Ya fue cargado
 
@@ -480,7 +502,6 @@ async function cargarProductosPorGrupo(codGrupo, nombreGrupo) {
     const proxyBaseUrl = window.location.hostname.includes('pages.dev') ? '/api/proxy'
         : (isLocalhost || window.location.hostname.includes('github.io')) ? 'https://gran-catador.pages.dev/api/proxy'
             : 'functions/api/proxy.php';
-    console.log(`📡 Consultando productos del grupo: ${nombreGrupo} (ID: ${codGrupo})`);
 
     try {
         const endpointUrl = `articulos/grupo/${encodeURIComponent(codGrupo)}`;
@@ -494,72 +515,7 @@ async function cargarProductosPorGrupo(codGrupo, nombreGrupo) {
         let articulos = Array.isArray(data) ? data : (data.data || data.articulos || data.result || []);
 
         if (articulos.length > 0) {
-            let nuevosProductos = articulos.map(item => {
-                // Extracción de precios USD estrictos (Usando precio 5 según lo solicitado)
-                let precioRaw = item.precioVentDiv5 ?? item.precioVentDiv ?? item.PrecioVentDiv ?? 0;
-                let precioUsd = parseFoxdataNumber(precioRaw);
-
-                // Extracción de cantidad para el cálculo de respaldo
-                let cantidadGrupRaw = item.cantidadGrup ?? item.CantidadGrup ?? item.cant_caja ?? 12;
-                let cantidadGrup = parseFoxdataNumber(cantidadGrupRaw);
-                if (cantidadGrup <= 0) cantidadGrup = 12;
-
-                let precioGrupRaw = item.precioVentGrupDiv5 ?? item.precioVentGrupDiv ?? item.PrecioVentGrupDiv ?? (precioUsd * cantidadGrup);
-                let precioCajaNum = parseFoxdataNumber(precioGrupRaw);
-                if (precioCajaNum <= 0) precioCajaNum = precioUsd * cantidadGrup;
-
-                let codigo = item.codArticulo ?? item.codigo ?? item.Codigo ?? item.CodArticulo ?? item.cod_articulo ?? item.id ?? item.Id ?? "";
-
-                let stock = 0;
-                if (appState.stockMap && appState.stockMap.has(codigo)) {
-                    stock = appState.stockMap.get(codigo);
-                } else {
-                    // Fallback
-                    let stockRaw = item.existencia ?? item.Existencia ?? item.stock ?? item.Stock ?? item.cantidad ?? item.Cantidad;
-                    stock = parseFloat(stockRaw !== undefined && stockRaw !== null ? stockRaw : 10);
-                }
-
-                let nombre = item.nombre ?? item.Nombre ?? item.descripcion ?? item.Descripcion ?? "Producto sin nombre";
-
-                let imagenUrl = item.imagenUrl ?? item.ImagenUrl ?? null;
-                if (imagenUrl && imagenUrl.startsWith('/')) {
-                    imagenUrl = proxyBaseUrl + '?imagePath=' + encodeURIComponent(imagenUrl);
-                }
-
-                let medida = item.medida ?? item.Medida ?? "";
-                let unidadGrup = item.unidadGrup ?? item.UnidadGrup ?? "CAJA";
-                let unidadSimple = item.unidadSimple ?? item.UnidadSimple ?? "UNIDAD";
-
-                let codSubgrupo = (item.codSubgrupo ?? item.CodSubgrupo ?? item.codsubgrupo ?? item.cod_subgrupo ?? item.id_subgrupo ?? item.subgrupo ?? item.subcategoria ?? "").toString().trim();
-                let nombreSubgrupo = item.desc_subgrupo ?? item.Desc_subgrupo ?? item.nombre_subgrupo ?? codSubgrupo;
-                let descAdicional = item.descExtensa ?? item.DescExtensa ?? item.comentario ?? item.Comentario ?? item.notas ?? item.Notas ?? "";
-
-                if (appState.siempreDisponibles && appState.siempreDisponibles.includes(codigo)) stock = 999;
-
-                return {
-                    codigo: codigo,
-                    Nombre: nombre,
-                    CatId: codGrupo,
-                    Cat: limpiarCategoria(nombreGrupo),
-                    SubCatId: codSubgrupo,
-                    SubCat: limpiarCategoria(nombreSubgrupo),
-                    PrecioStr: precioUsd.toFixed(2),
-                    PrecioNum: precioUsd,
-                    PrecioBsStr: (precioUsd * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
-                    PrecioCajaUsd: precioCajaNum.toFixed(2),
-                    PrecioCajaNum: precioCajaNum,
-                    PrecioCajaBsStr: (precioCajaNum * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
-                    StockNum: stock,
-                    StockStr: stock >= 999 ? "Disponible" : (stock > 0 ? stock.toString() : "0"),
-                    TextoBusquedaLimpio: quitarAcentos(nombre) + " " + quitarAcentos(nombreGrupo) + " " + quitarAcentos(nombreSubgrupo),
-                    CantidadGrup: cantidadGrup,
-                    Medida: medida,
-                    UnidadGrup: unidadGrup,
-                    UnidadSimple: unidadSimple,
-                    ImagenUrl: imagenUrl,
-                    DescAdicional: descAdicional
-                };
-            }).filter(p => p.PrecioNum >= 0); // Permitimos precio 0 temporalmente para evitar que se oculten por fallos
+            let nuevosProductos = articulos.map(item => formatearProductoApi(item, codGrupo, nombreGrupo, "", "", proxyBaseUrl)).filter(p => p.PrecioNum >= 0);
 
             // Evitar duplicados eliminando también los vacíos previos (previene memory leak de array)
             let codigosNuevos = new Set(nuevosProductos.filter(p => p.codigo !== "").map(p => p.codigo));
@@ -572,11 +528,9 @@ async function cargarProductosPorGrupo(codGrupo, nombreGrupo) {
             // Actualizar el índice de búsqueda con los nuevos productos
             if (typeof buildSearchIndex === 'function') buildSearchIndex(inventario);
 
-            console.log(`✅ ${nuevosProductos.length} productos agregados de ${nombreGrupo}`);
             return true;
         } else {
             // --- LÓGICA DE RESCATE PROFUNDO EN SEGUNDO PLANO ---
-            console.log(`⚠️ Grupo ${nombreGrupo} vacío en la raíz. Rescatando a través de sus subgrupos...`);
             const resSub = await fetch(`${proxyBaseUrl}?endpoint=gruposinvsub/grupo/${encodeURIComponent(codGrupo)}`);
             if (resSub.ok) {
                 const dataSub = await resSub.json();
@@ -594,7 +548,7 @@ async function cargarProductosPorGrupo(codGrupo, nombreGrupo) {
                 }
             }
         }
-    } catch (e) { console.error(`⚠️ Error cargando grupo ${codGrupo}:`, e); }
+    } catch (e) { }
 
     return false;
 }
@@ -617,7 +571,6 @@ async function cargarProductosPorSubgrupo(codGrupo, codSubgrupo, nombreGrupo, no
     // lo pasen como query-param a la API de SmartVentas:
     //   → GET /api/v1/syn/articulos/grupo/{codGrupo}?codSubgrupo=01
     const endpointUrl = `articulos/grupo/${encodeURIComponent(codGrupo)}?codSubgrupo=${encodeURIComponent(codSubgrupo)}`;
-    console.log(`📡 Cargando subgrupo "${nombreSubgrupo}" → endpoint: ${endpointUrl}`);
 
     try {
         const res = await fetch(`${proxyBaseUrl}?endpoint=${encodeURIComponent(endpointUrl)}`);
@@ -627,68 +580,7 @@ async function cargarProductosPorSubgrupo(codGrupo, codSubgrupo, nombreGrupo, no
         let articulos = Array.isArray(data) ? data : (data.data || data.articulos || data.result || []);
 
         if (articulos.length > 0) {
-            let nuevosProductos = articulos.map(item => {
-                // Extracción de precios USD estrictos (Usando precio 5 según lo solicitado)
-                let precioRaw = item.precioVentDiv5 ?? item.precioVentDiv ?? item.PrecioVentDiv ?? 0;
-                let precioUsd = parseFoxdataNumber(precioRaw);
-
-                // Extracción de cantidad para el cálculo de respaldo
-                let cantidadGrupRaw = item.cantidadGrup ?? item.CantidadGrup ?? item.cant_caja ?? 12;
-                let cantidadGrup = parseFoxdataNumber(cantidadGrupRaw);
-                if (cantidadGrup <= 0) cantidadGrup = 12;
-
-                let precioGrupRaw = item.precioVentGrupDiv5 ?? item.precioVentGrupDiv ?? item.PrecioVentGrupDiv ?? (precioUsd * cantidadGrup);
-                let precioCajaNum = parseFoxdataNumber(precioGrupRaw);
-                if (precioCajaNum <= 0) precioCajaNum = precioUsd * cantidadGrup;
-
-                let codigo = item.codArticulo ?? item.codigo ?? item.Codigo ?? item.CodArticulo ?? item.cod_articulo ?? item.id ?? item.Id ?? "";
-
-                let stock = 0;
-                if (appState.stockMap && appState.stockMap.has(codigo)) {
-                    stock = appState.stockMap.get(codigo);
-                } else {
-                    // Fallback
-                    let stockRaw = item.existencia ?? item.Existencia ?? item.stock ?? item.Stock ?? item.cantidad ?? item.Cantidad;
-                    stock = parseFloat(stockRaw !== undefined && stockRaw !== null ? stockRaw : 10);
-                }
-
-                let nombre = item.nombre ?? item.Nombre ?? item.descripcion ?? item.Descripcion ?? "Producto sin nombre";
-
-                let imagenUrl = item.imagenUrl ?? item.ImagenUrl ?? null;
-                if (imagenUrl && imagenUrl.startsWith('/')) {
-                    imagenUrl = proxyBaseUrl + '?imagePath=' + encodeURIComponent(imagenUrl);
-                }
-
-                let medida = item.medida ?? item.Medida ?? "";
-                let unidadGrup = item.unidadGrup ?? item.UnidadGrup ?? "CAJA";
-                let unidadSimple = item.unidadSimple ?? item.UnidadSimple ?? "UNIDAD";
-
-                let codSubApi = (item.codSubgrupo ?? item.CodSubgrupo ?? item.codsubgrupo ?? item.cod_subgrupo ?? item.id_subgrupo ?? "").toString().trim();
-                let subCatIdFinal = codSubApi || codSubgrupo;
-                let nombreSubFinal = item.desc_subgrupo ?? item.Desc_subgrupo ?? item.nombre_subgrupo ?? nombreSubgrupo;
-                let descAdicional = item.descExtensa ?? item.DescExtensa ?? item.comentario ?? item.Comentario ?? item.notas ?? item.Notas ?? "";
-
-                if (appState.siempreDisponibles && appState.siempreDisponibles.includes(codigo)) stock = 999;
-
-                return {
-                    codigo, Nombre: nombre,
-                    CatId: codGrupo, Cat: limpiarCategoria(nombreGrupo),
-                    SubCatId: subCatIdFinal,
-                    SubCat: limpiarCategoria(nombreSubFinal),
-                    PrecioStr: precioUsd.toFixed(2), PrecioNum: precioUsd,
-                    PrecioBsStr: (precioUsd * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
-                    PrecioCajaUsd: precioCajaNum.toFixed(2), PrecioCajaNum: precioCajaNum,
-                    PrecioCajaBsStr: (precioCajaNum * appState.tasaOficial).toLocaleString('es-VE', { minimumFractionDigits: 2 }),
-                    StockNum: stock, StockStr: stock > 0 ? stock.toString() : "0",
-                    TextoBusquedaLimpio: quitarAcentos(nombre) + " " + quitarAcentos(nombreGrupo) + " " + quitarAcentos(nombreSubFinal),
-                    CantidadGrup: cantidadGrup,
-                    Medida: medida,
-                    UnidadGrup: unidadGrup,
-                    UnidadSimple: unidadSimple,
-                    ImagenUrl: imagenUrl,
-                    DescAdicional: descAdicional
-                };
-            }).filter(p => p.PrecioNum >= 0);
+            let nuevosProductos = articulos.map(item => formatearProductoApi(item, codGrupo, nombreGrupo, codSubgrupo, nombreSubgrupo, proxyBaseUrl)).filter(p => p.PrecioNum >= 0);
 
             // Reemplazar en inventario los productos de este subgrupo
             // (elimina tanto por código como por SubCatId para limpiar entradas previas sin etiqueta)
@@ -702,19 +594,16 @@ async function cargarProductosPorSubgrupo(codGrupo, codSubgrupo, nombreGrupo, no
             // Actualizar el índice de búsqueda con los nuevos productos
             if (typeof buildSearchIndex === 'function') buildSearchIndex(inventario);
 
-            console.log(`✅ ${nuevosProductos.length} productos del subgrupo "${nombreSubgrupo}" (ID: ${codSubgrupo}) cargados con SubCatId correcto.`);
             return true;
-        } else {
-            console.warn(`⚠️ La API devolvió 0 artículos para subgrupo ${codSubgrupo} del grupo ${codGrupo}.`);
         }
-    } catch (e) { console.error(`⚠️ Error cargando subgrupo ${codSubgrupo}:`, e); }
+    } catch (e) { }
 
     return false;
 }
 
 async function cargarRestoDeGruposEnSegundoPlano(grupos) {
-    console.log("🔄 Iniciando sincronización en segundo plano de todos los grupos para el buscador...");
     let qInput = document.getElementById('buscador');
+    let needsRefresh = false;
 
     for (let grupo of grupos) {
         let codGrupo = (grupo.CodGrupo || grupo.codigo || grupo.id || grupo.Codigo || grupo.Id || grupo.id_grupo || grupo.cod_grupo || grupo.grupo || grupo.Grupo || "").toString().trim();
@@ -725,13 +614,16 @@ async function cargarRestoDeGruposEnSegundoPlano(grupos) {
 
             // Si el usuario está viendo "Todos", la categoría recién cargada, o está escribiendo, refrescamos la vista
             if (fueCargado && (categoriaActual === 'Todos' || limpiarCategoria(nombreGrupo) === limpiarCategoria(categoriaActual) || (qInput && qInput.value.trim() !== ''))) {
-                aplicarFiltros();
+                needsRefresh = true;
             }
 
             await new Promise(resolve => setTimeout(resolve, 300)); // Pequeña pausa para no saturar la API
         }
     }
-    console.log("✅ Todos los grupos han sido cargados en memoria.");
+
+    if (needsRefresh) {
+        aplicarFiltros();
+    }
 }
 
 function debounceBusqueda(event) {
@@ -833,8 +725,8 @@ function aplicarFiltros() {
         else if (sortOption === 'mayor') resultadosFiltrados.sort((a, b) => b.PrecioNum - a.PrecioNum);
         else if (sortOption === 'az') resultadosFiltrados.sort((a, b) => a.Nombre.localeCompare(b.Nombre));
         else if (sortOption === 'relevancia' && categoriaActual === 'Todos' && q.length === 0) {
-            // Mezclar aleatoriamente el catálogo principal ("Inicio" / "Todos")
-            resultadosFiltrados.sort(() => Math.random() - 0.5);
+            // Mezclar aleatoriamente el catálogo principal de forma estable (evita parpadeos y saltos)
+            resultadosFiltrados.sort((a, b) => a.RandomOrder - b.RandomOrder);
         }
     }
 

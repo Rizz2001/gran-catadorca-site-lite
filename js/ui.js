@@ -61,8 +61,8 @@ function checkHorario() {
         if (!badge) return;
 
         if (horaCaracas >= 8 && horaCaracas < 21) {
-            isTiendaAbierta = true;
-            appState.isTiendaAbierta = true;
+            try { isTiendaAbierta = true; } catch(e) { window.isTiendaAbierta = true; }
+            if (typeof appState !== 'undefined') appState.isTiendaAbierta = true;
             badge.innerHTML = "🟢 ABIERTO";
             badge.style.background = "rgba(37, 211, 102, 0.2)";
             badge.style.color = "#25D366";
@@ -70,8 +70,8 @@ function checkHorario() {
             if (btnWs) btnWs.classList.remove('disabled');
             if (msgCerrado) msgCerrado.style.display = "none";
         } else {
-            isTiendaAbierta = false;
-            appState.isTiendaAbierta = false;
+            try { isTiendaAbierta = false; } catch(e) { window.isTiendaAbierta = false; }
+            if (typeof appState !== 'undefined') appState.isTiendaAbierta = false;
             badge.innerHTML = "🔴 CERRADO";
             badge.style.background = "rgba(234, 67, 53, 0.2)";
             badge.style.color = "#ea4335";
@@ -79,7 +79,7 @@ function checkHorario() {
             if (btnWs) btnWs.classList.add('disabled');
             if (msgCerrado) msgCerrado.style.display = "block";
         }
-    } catch (e) { console.log("Error en horario"); }
+    } catch (e) { }
 }
 
 checkHorario();
@@ -120,14 +120,17 @@ function irInicio() {
     if (sortSelect) sortSelect.value = 'relevancia';
 
     cerrarSugerencias();
-    subcategoriaActual = null;
+    try { subcategoriaActual = null; } catch(e) { window.subcategoriaActual = null; }
 
     let subcatSection = document.getElementById('subcategoria-section-main');
     if (subcatSection) subcatSection.style.display = 'none';
 
-    let btnInicio = Array.from(document.querySelectorAll('.cat-btn')).find(b => b.innerText.includes('Inicio'));
-    if (btnInicio) filtrarCategoria('Todos', btnInicio);
-    else filtrarCategoria('Todos', document.querySelectorAll('.cat-btn')[0]);
+    let cbInicio = document.getElementById('cat-todos');
+    if (cbInicio) {
+        filtrarCategoria('Todos', cbInicio);
+    } else {
+        filtrarCategoria('Todos', document.querySelector('#contenedorCategorias input[type="checkbox"]'));
+    }
 
     let mTitle = document.getElementById('mobile-header-title');
     if (mTitle) mTitle.innerText = 'Inicio';
@@ -244,11 +247,11 @@ function limpiarCacheAdmin() {
     setTimeout(() => location.reload(), 1500);
 }
 
-function mostrarToast(msg) { const cont = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = msg; cont.appendChild(t); setTimeout(() => t.remove(), 2500); }
+function mostrarToast(msg) { const cont = document.getElementById('toast-container'); if(!cont) return; const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = msg; cont.appendChild(t); setTimeout(() => t.remove(), 2500); }
 
 // --- VISTAS Y CATEGORÍAS ---
 function cambiarModoVista(modo) {
-    modoVistaGlobal = modo;
+    try { modoVistaGlobal = modo; } catch(e) { window.modoVistaGlobal = modo; }
     document.getElementById('btn-modo-unidad').classList.remove('active');
     document.getElementById('btn-modo-caja').classList.remove('active');
     document.getElementById('btn-modo-' + modo).classList.add('active');
@@ -330,24 +333,36 @@ function generarCategorias() {
     cont.innerHTML = '';
 
     // Botón Inicio
-    let btnInicio = document.createElement('button');
-    btnInicio.className = (categoriaActual === 'Todos') ? "cat-btn active" : "cat-btn";
-    btnInicio.innerHTML = `<i class="fa-solid fa-shop"></i><span>Inicio</span>`;
-    btnInicio.onclick = function () { irInicio(); };
-    cont.appendChild(btnInicio);
+    let divInicio = document.createElement('div');
+    divInicio.className = 'category-group';
+    divInicio.innerHTML = `
+        <div class="checkbox-item">
+            <input type="checkbox" id="cat-todos" ${categoriaActual === 'Todos' ? 'checked' : ''} onchange="irInicio()">
+            <label for="cat-todos"><i class="fa-solid fa-shop"></i> Inicio</label>
+        </div>
+    `;
+    cont.appendChild(divInicio);
 
-    console.log("🛠️ Generando Grupos. Grupos API:", appState.gruposInventario?.length);
 
     // Categorías de la API SmartVentas
     if (appState.gruposInventario && appState.gruposInventario.length > 0) {
         appState.gruposInventario.forEach(g => {
             let nombre = g.Nombre || g.nombre || g.Descripcion || g.descripcion || g.NombreGrupo || g.desc_grupo || g.DescGrupo;
             if (nombre) {
-                let b = document.createElement('button');
-                b.className = (limpiarCategoria(nombre) === limpiarCategoria(categoriaActual)) ? "cat-btn active" : "cat-btn";
-                b.innerHTML = `<i class="fa-solid ${getIconForCategory(nombre)}"></i><span>${nombre}</span>`;
-                b.onclick = function () { filtrarCategoria(nombre, this); };
-                cont.appendChild(b);
+                let catIdLimpio = limpiarCategoria(nombre).replace(/[^a-z0-9]/gi, '-').toLowerCase();
+                let div = document.createElement('div');
+                div.className = 'category-group';
+                div.innerHTML = `
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="cat-${catIdLimpio}" ${limpiarCategoria(nombre) === limpiarCategoria(categoriaActual) ? 'checked' : ''} onchange="filtrarCategoria('${nombre}', this)">
+                        <label for="cat-${catIdLimpio}">
+                            <i class="fa-solid ${getIconForCategory(nombre)}"></i> <span style="flex:1;">${nombre}</span>
+                            <i class="fa-solid fa-xmark close-cat-icon" style="display:none; opacity: 0.8; font-size: 14px;"></i>
+                        </label>
+                    </div>
+                    <div class="sidebar-subfilters" id="subcats-${catIdLimpio}" style="display: none; padding-left: 20px; margin-top: 8px; margin-bottom: 15px;"></div>
+                `;
+                cont.appendChild(div);
             }
         });
     } else {
@@ -363,9 +378,11 @@ function generarCategorias() {
         cargarSubcategoriasAPI(categoriaActual);
     } else {
         let subcatSection = document.getElementById('subcategoria-section-main');
-        let subcatContainer = document.getElementById('contenedorSubcategorias');
         if (subcatSection) subcatSection.style.display = 'none';
-        if (subcatContainer) subcatContainer.innerHTML = '';
+        document.querySelectorAll('.sidebar-subfilters').forEach(el => {
+            el.style.display = 'none';
+            el.innerHTML = '';
+        });
     }
 
     setTimeout(() => {
@@ -383,12 +400,23 @@ function generarCategorias() {
 }
 
 async function cargarSubcategoriasAPI(nombreCategoria) {
+    let catIdLimpio = limpiarCategoria(nombreCategoria).replace(/[^a-z0-9]/gi, '-').toLowerCase();
     let subcatSection = document.getElementById('subcategoria-section-main');
-    let subcatContainer = document.getElementById('contenedorSubcategorias');
-    if (!subcatSection || !subcatContainer) return;
+    if (subcatSection) subcatSection.style.display = 'none'; // Ocultamos el bloque estático nativo
+
+    // Cerramos todos los demás subgrupos primero
+    document.querySelectorAll('.sidebar-subfilters').forEach(el => {
+        if (el.id !== `subcats-${catIdLimpio}`) {
+            el.style.display = 'none';
+            el.innerHTML = '';
+        }
+    });
+
+    let subcatContainer = document.getElementById(`subcats-${catIdLimpio}`);
+    if (!subcatContainer) return;
 
     // Mostrar visualmente que está cargando
-    subcatSection.style.display = 'block';
+    subcatContainer.style.display = 'flex';
     subcatContainer.innerHTML = '<div style="padding: 10px 5px; font-size: 13px; color: var(--color-primary); font-weight: 600; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando subgrupos...</div>';
 
     // Buscar el código del grupo de forma segura
@@ -406,7 +434,6 @@ async function cargarSubcategoriasAPI(nombreCategoria) {
     // 1. Intentar obtener de la API de Foxdata
     if (codGrupo) {
         try {
-            console.log(`📡 Consultando API para subgrupos del grupo: ${nombreCategoria} (ID: ${codGrupo})`);
             const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const proxyBaseUrl = window.location.hostname.includes('pages.dev') ? '/api/proxy'
                 : (isLocalhost || window.location.hostname.includes('github.io')) ? 'https://gran-catador.pages.dev/api/proxy'
@@ -414,17 +441,13 @@ async function cargarSubcategoriasAPI(nombreCategoria) {
             const res = await fetch(`${proxyBaseUrl}?endpoint=gruposinvsub/grupo/${encodeURIComponent(codGrupo)}`);
             if (res.ok) {
                 const data = await res.json();
-                console.log(`✔️ Respuesta API Subgrupos:`, data);
                 subcategorias = Array.isArray(data) ? data : (data.data || data.result || []);
             }
-        } catch (e) {
-            console.warn("⚠️ Falló la API de subgrupos, usando analizador local.", e);
-        }
+        } catch (e) { }
     }
 
     // 2. ANALIZADOR DE RESPALDO: Analizar el inventario local si la API no devuelve nada
     if (subcategorias.length === 0) {
-        console.log(`🪄 Analizando productos locales para extraer subgrupos de: ${nombreCategoria}`);
         let productosDelGrupo = inventario.filter(p => p.Cat === limpiarCategoria(nombreCategoria) || (codGrupo !== "" && p.CatId === codGrupo));
 
         let mapaSubcats = new Map();
@@ -440,7 +463,6 @@ async function cargarSubcategoriasAPI(nombreCategoria) {
             subcategorias.push({ codigo: idSub, nombre: nombreSub });
         });
 
-        console.log("🔍 Subgrupos detectados por el analizador:", subcategorias);
     }
 
     // 3. Renderizar en la pantalla
@@ -449,7 +471,6 @@ async function cargarSubcategoriasAPI(nombreCategoria) {
         // Si SmartVentas devolvió 0 productos para el grupo principal, los extraemos forzosamente de los subgrupos.
         let prodsGrupo = inventario.filter(p => p.CatId === codGrupo || p.Cat === limpiarCategoria(nombreCategoria));
         if (prodsGrupo.length === 0) {
-            console.log(`⚠️ Grupo vacío. Rescatando productos automáticamente a través de sus ${subcategorias.length} subgrupos...`);
             let promesas = subcategorias.map(sub => {
                 let nombreSub = sub.nombre || sub.descripcion || sub.Nombre || sub.desc_subgrupo || "Subgrupo";
                 let codSub = (sub.CodSubgrupo || sub.codsubgrupo || sub.Codsubgrupo || sub.cod_subgrupo || sub.cod_sub_grupo || sub.id_subgrupo || sub.id_sub_grupo || sub.Cod_subgrupo || sub.codigo || sub.id || sub.subgrupo || sub.Subgrupo || limpiarCategoria(nombreSub)).toString().trim();
@@ -464,13 +485,17 @@ async function cargarSubcategoriasAPI(nombreCategoria) {
 
         subcatContainer.innerHTML = '';
 
-        let btnLimpiar = document.createElement('button');
-        btnLimpiar.className = (!subcategoriaActual) ? "subcat-btn active" : "subcat-btn";
-        btnLimpiar.innerHTML = '<i class="fa-solid fa-list"></i><span>Todos</span>';
-        btnLimpiar.onclick = function () {
-            subcategoriaActual = null;
-            Array.from(subcatContainer.children).forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
+        let divTodos = document.createElement('div');
+        divTodos.className = 'checkbox-item';
+        divTodos.innerHTML = `
+            <input type="checkbox" id="subcat-todos" ${!subcategoriaActual ? 'checked' : ''}>
+            <label for="subcat-todos"><i class="fa-solid fa-list"></i> Todos</label>
+        `;
+        let cbTodos = divTodos.querySelector('input');
+        cbTodos.onchange = function () {
+            try { subcategoriaActual = null; } catch(e) { window.subcategoriaActual = null; }
+            subcatContainer.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+            this.checked = true;
 
             // Si el usuario presiona "Todos" mientras ocurre el rescate, le mostramos el esqueleto de carga
             let prods = inventario.filter(p => p.CatId === codGrupo || p.Cat === limpiarCategoria(nombreCategoria));
@@ -480,7 +505,7 @@ async function cargarSubcategoriasAPI(nombreCategoria) {
 
             aplicarFiltros();
         };
-        subcatContainer.appendChild(btnLimpiar);
+        subcatContainer.appendChild(divTodos);
 
         subcategorias.forEach(sub => {
             let nombreSub = sub.nombre || sub.descripcion || sub.Nombre || sub.desc_subgrupo || "Subgrupo";
@@ -488,14 +513,19 @@ async function cargarSubcategoriasAPI(nombreCategoria) {
 
             // Formatear Nombre (Capitalizar primera letra: "Whisky" en vez de "WHISKY")
             let nombreMostrado = nombreSub.charAt(0).toUpperCase() + nombreSub.slice(1).toLowerCase();
+            let subIdLimpio = codSub.replace(/[^a-z0-9]/gi, '-').toLowerCase();
 
-            let btn = document.createElement('button');
-            btn.className = (codSub === subcategoriaActual || limpiarCategoria(nombreSub) === subcategoriaActual) ? "subcat-btn active" : "subcat-btn";
-            btn.innerHTML = `<span>${nombreMostrado}</span>`;
-            btn.onclick = async function () {
-                subcategoriaActual = codSub;
-                Array.from(subcatContainer.children).forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
+            let divSub = document.createElement('div');
+            divSub.className = 'checkbox-item';
+            divSub.innerHTML = `
+                <input type="checkbox" id="subcat-${subIdLimpio}" ${(codSub === subcategoriaActual || limpiarCategoria(nombreSub) === subcategoriaActual) ? 'checked' : ''}>
+                    <label for="subcat-${subIdLimpio}"><i class="fa-solid fa-angle-right"></i> ${nombreMostrado}</label>
+            `;
+            let cb = divSub.querySelector('input');
+            cb.onchange = async function () {
+                try { subcategoriaActual = codSub; } catch(e) { window.subcategoriaActual = codSub; }
+                subcatContainer.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+                this.checked = true;
 
                 // Siempre llamamos a la API con ?codSubgrupo= para que los productos
                 // queden etiquetados con su SubCatId correcto antes de filtrar.
@@ -508,37 +538,32 @@ async function cargarSubcategoriasAPI(nombreCategoria) {
 
                 aplicarFiltros();
             };
-            subcatContainer.appendChild(btn);
+            subcatContainer.appendChild(divSub);
         });
-
-        subcatSection.style.display = 'block';
-        subcatContainer.scrollLeft = 0;
-
-        setTimeout(() => {
-            if (typeof actualizarFlechasScroll === 'function') actualizarFlechasScroll('contenedorSubcategorias');
-        }, 150);
-
-        if (!subcatContainer.hasAttribute('data-scroll-listener')) {
-            subcatContainer.addEventListener('scroll', () => { if (typeof actualizarFlechasScroll === 'function') actualizarFlechasScroll('contenedorSubcategorias'); });
-            window.addEventListener('resize', () => { if (typeof actualizarFlechasScroll === 'function') actualizarFlechasScroll('contenedorSubcategorias'); });
-            subcatContainer.setAttribute('data-scroll-listener', 'true');
-        }
     } else {
-        subcatSection.style.display = 'none';
+        subcatContainer.style.display = 'none';
         subcatContainer.innerHTML = '';
-        console.warn(`❌ El grupo "${nombreCategoria}" no tiene subgrupos asignados en la base de datos.`);
     }
 }
 
-async function filtrarCategoria(cat, btn) {
-    categoriaActual = cat; subcategoriaActual = null;
-    let subcatSection = document.getElementById('subcategoria-section-main');
-    let subcatContainer = document.getElementById('contenedorSubcategorias');
-    if (subcatSection) subcatSection.style.display = 'none';
-    if (subcatContainer) subcatContainer.innerHTML = '';
+async function filtrarCategoria(cat, checkboxElement) {
+    // Si el usuario hace clic en el grupo que ya estaba seleccionado o en la X, se desmarca
+    if (categoriaActual === cat && checkboxElement && !checkboxElement.checked) {
+        irInicio();
+        return;
+    }
 
-    document.querySelectorAll('#contenedorCategorias .cat-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
+    try { categoriaActual = cat; subcategoriaActual = null; } catch(e) { window.categoriaActual = cat; window.subcategoriaActual = null; }
+    let subcatSection = document.getElementById('subcategoria-section-main');
+    if (subcatSection) subcatSection.style.display = 'none';
+
+    document.querySelectorAll('#contenedorCategorias input[type="checkbox"]').forEach(cb => cb.checked = false);
+    if (checkboxElement) checkboxElement.checked = true;
+
+    document.querySelectorAll('.sidebar-subfilters').forEach(el => {
+        el.style.display = 'none';
+        el.innerHTML = '';
+    });
 
     let mTitle = document.getElementById('mobile-header-title');
     if (mTitle) mTitle.innerText = (cat === 'Todos') ? 'Inicio' : cat;
@@ -570,6 +595,25 @@ async function filtrarCategoria(cat, btn) {
 function toggleCategorias() { const panel = document.getElementById('categoria-panel'); const overlay = document.getElementById('categoria-overlay'); if (!panel || !overlay) return; const isOpen = panel.classList.toggle('open'); overlay.style.display = isOpen ? 'block' : 'none'; }
 function closeCategorias() { const panel = document.getElementById('categoria-panel'); const overlay = document.getElementById('categoria-overlay'); if (panel) panel.classList.remove('open'); if (overlay) overlay.style.display = 'none'; }
 
+// --- FUNCIONES DEL SIDEBAR ---
+window.toggleSidebar = function () {
+    const sidebar = document.getElementById('sidebar-menu');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar && overlay) {
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+    }
+};
+
+window.closeSidebar = function () {
+    const sidebar = document.getElementById('sidebar-menu');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar && overlay) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+    }
+};
+
 // --- SUGERENCIAS E INTERACCIONES ---
 /**
  * Muestra el panel de sugerencias usando resultados ya calculados por aplicarFiltros.
@@ -584,7 +628,7 @@ function mostrarSugerencias(q, resultados) {
 }
 function cerrarSugerencias() { const cont = document.getElementById('search-suggestions'); if (cont) cont.style.display = 'none'; }
 document.addEventListener('click', (e) => { if (!e.target.closest('.search-pill') && !e.target.closest('.search-container')) cerrarSugerencias(); });
-function compartirProducto(nombre, precio) { const text = `¡Mira esta bebida! ${nombre} a solo $${precio}. ${window.location.href}`; if (navigator.share) { navigator.share({ title: 'Gran Catador', text, url: window.location.href }).catch(e => console.log(e)); return; } if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => mostrarToast("Texto copiado al portapapeles."), () => fallbackCopyText(text)); return; } fallbackCopyText(text); }
+function compartirProducto(nombre, precio) { const text = `¡Mira esta bebida! ${nombre} a solo $${precio}. ${window.location.href}`; if (navigator.share) { navigator.share({ title: 'Gran Catador', text, url: window.location.href }).catch(e => { }); return; } if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(() => mostrarToast("Texto copiado al portapapeles."), () => fallbackCopyText(text)); return; } fallbackCopyText(text); }
 function fallbackCopyText(text) { const textarea = document.createElement('textarea'); textarea.value = text; textarea.style.position = 'fixed'; textarea.style.opacity = '0'; document.body.appendChild(textarea); textarea.focus(); textarea.select(); try { document.execCommand('copy'); mostrarToast("Texto copiado al portapapeles."); } catch (e) { mostrarToast("No se pudo copiar al portapapeles."); } document.body.removeChild(textarea); }
 function compartirProductoB64(b64, p) { compartirProducto(decodificarNombre(b64), p); }
 

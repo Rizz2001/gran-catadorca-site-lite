@@ -105,6 +105,9 @@
                 <div class="container header-main-container">
 
                     <div class="header-left">
+                        <button onclick="toggleSidebar()" class="btn-menu-sidebar" aria-label="Abrir Menú">
+                            <i class="fa-solid fa-bars"></i> <span>Menú</span>
+                        </button>
                         <div class="header-brand" onclick="irInicio()">
                             <img src="/logo.webp" alt="Logo Gran Catador" width="1000" height="750" loading="eager"
                                 style="height: 32px; width: 32px; border-radius: 4px; object-fit: contain;">
@@ -162,45 +165,53 @@
                 </div>
             </div>
             <div class="mobile-only"
-                style="background: rgba(245, 158, 11, 0.05); border-bottom: 1px solid var(--color-border); padding: 8px 0; justify-content: center; color: var(--dorado); font-size: 12px; font-weight: 600; gap: 15px;">
-                <span style="display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-dollar-sign"></i> <span
-                        id="tasaValorMobile">...</span></span>
-                <span style="opacity: 0.3; color: var(--color-text);">|</span>
-                <span style="display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-euro-sign"></i> <span
-                        id="tasaEuroValorMobile">...</span></span>
-            </div>
-
-            <nav class="header-nav-bar" aria-label="Categorías de productos"
-                style="background: var(--color-bg); border-top: 1px solid var(--color-border); padding: 5px 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                <div class="container">
-                    <div class="scroll-container-wrapper" style="position: relative; margin-bottom: 0;">
-                        <button class="scroll-arrow left-arrow" onclick="scrollHorizontal('contenedorCategorias', -300)"
-                            aria-label="Desplazar a la izquierda"><i class="fa-solid fa-chevron-left"></i></button>
-                        <div class="horizontal-scroll-wrapper" style="width: 100%; overflow: hidden;">
-                            <div class="categorias-scroll horizontal-filters" id="contenedorCategorias"></div>
-                        </div>
-                        <button class="scroll-arrow right-arrow" onclick="scrollHorizontal('contenedorCategorias', 300)"
-                            aria-label="Desplazar a la derecha"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
-
-                    <div class="scroll-container-wrapper" id="subcategoria-section-main"
-                        style="display:none; position: relative; margin-bottom: 0; border-top: 1px solid var(--color-border); padding-top: 5px; margin-top: 5px;">
-                        <button class="scroll-arrow left-arrow"
-                            onclick="scrollHorizontal('contenedorSubcategorias', -300)"
-                            aria-label="Desplazar a la izquierda"><i class="fa-solid fa-chevron-left"></i></button>
-                        <div class="horizontal-scroll-wrapper" style="width: 100%; overflow: hidden;">
-                            <div class="categorias-scroll horizontal-filters" id="contenedorSubcategorias"></div>
-                        </div>
-                        <button class="scroll-arrow right-arrow"
-                            onclick="scrollHorizontal('contenedorSubcategorias', 300)"
-                            aria-label="Desplazar a la derecha"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
+                style="background: rgba(245, 158, 11, 0.05); border-bottom: 1px solid var(--color-border); padding: 8px 15px; display: flex; justify-content: center; align-items: center; color: var(--dorado); font-size: 12px; font-weight: 600;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%;">
+                    <span style="display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-dollar-sign"></i>
+                        <span id="tasaValorMobile">...</span></span>
+                    <span style="opacity: 0.3; color: var(--color-text);">|</span>
+                    <span style="display:flex; align-items:center; gap:4px;"><i class="fa-solid fa-euro-sign"></i> <span
+                            id="tasaEuroValorMobile">...</span></span>
                 </div>
-            </nav>
+            </div>
 
             <span id="store-status" style="display:none;"></span>
         </div>
     </header>
+
+    <!-- Overlay para Menú Lateral -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- Menú Lateral (Sidebar) de Categorías -->
+    <aside id="sidebar-menu" class="sidebar-menu" aria-label="Filtros y Categorías">
+        <div class="sidebar-header">
+            <h3
+                style="margin: 0; font-size: 18px; color: var(--color-text); font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-list-ul"></i> Categorías
+            </h3>
+            <button onclick="closeSidebar()" class="modal-close-btn"
+                style="width: 32px; height: 32px; font-size: 16px; display: flex; align-items: center; justify-content: center; background: transparent; border: none;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="sidebar-content">
+            <div style="margin-bottom: 20px;">
+                <h4
+                    style="font-size: 12px; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 10px; letter-spacing: 0.5px; font-weight: 700;">
+                    Explorar Grupos</h4>
+                <div class="sidebar-filters" id="contenedorCategorias"></div>
+            </div>
+
+            <div id="subcategoria-section-main"
+                style="display:none; border-top: 1px solid var(--color-border); padding-top: 20px; margin-top: 10px;">
+                <h4
+                    style="font-size: 12px; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 10px; letter-spacing: 0.5px; font-weight: 700;">
+                    Subgrupos</h4>
+                <div class="sidebar-subfilters" id="contenedorSubcategorias"></div>
+            </div>
+        </div>
+    </aside>
 
     <main id="main-content" role="main">
 
@@ -583,103 +594,101 @@
     </div>
 
     <div id="modal-ajustes" class="modal-fullscreen">
-            <div class="modal-content-wrapper">
-                <div class="cart-header">
-                    <h2>Ajustes</h2>
-                    <button onclick="cerrarModal('modal-ajustes', 'nav-home')" aria-label="Cerrar ajustes"
-                        class="modal-close-btn">
-                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-                    </button>
-                </div>
-                <div class="checkout-box" style="display:flex; justify-content:space-between; align-items:center;">
-                    <label for="toggleDarkMode" style="font-weight:600; font-size: 14px; cursor: pointer;">🌙 Modo
-                        Oscuro</label>
-                    <input type="checkbox" id="toggleDarkMode" onchange="toggleDark()"
-                        style="width:20px; height:20px; accent-color: var(--color-primary);"
-                        aria-label="Activar modo oscuro">
-                </div>
-                <div class="checkout-box" style="margin-top:15px; cursor:pointer;" onclick="abrirLegales()"
-                    role="button" tabindex="0" aria-label="Ver políticas y soporte">
-                    <span style="font-weight:600; font-size: 14px; display:flex; align-items:center;"><i
-                            class="fa-solid fa-scale-balanced"
-                            style="margin-right:10px; color: var(--color-primary); font-size: 18px;"
-                            aria-hidden="true"></i>
-                        Políticas y Soporte</span>
-                </div>
-                <div class="checkout-box" style="margin-top:15px; cursor:pointer;" onclick="limpiarCacheAdmin()"
-                    role="button" tabindex="0" aria-label="Actualizar precios e inventario">
-                    <span style="font-weight:600; font-size: 14px; display:flex; align-items:center;"><i
-                            class="fa-solid fa-arrows-rotate"
-                            style="margin-right:10px; color: var(--color-success); font-size: 18px;"
-                            aria-hidden="true"></i>
-                        Actualizar Precios e Inventario</span>
-                </div>
-                <p
-                    style="text-align: center; margin-top: 30px; font-size: 11px; color: var(--color-text-muted); line-height: 1.5;">
-                    Desarrollado para Gran Catador C.A.<br>Contacto Soporte Técnico: 0422-0012375</p>
+        <div class="modal-content-wrapper">
+            <div class="cart-header">
+                <h2>Ajustes</h2>
+                <button onclick="cerrarModal('modal-ajustes', 'nav-home')" aria-label="Cerrar ajustes"
+                    class="modal-close-btn">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
             </div>
-        </div>
-
-        <div id="modal-legales" class="modal-fullscreen" style="z-index: 2500;">
-            <div class="modal-content-wrapper">
-                <div class="cart-header">
-                    <h2>Legal y Soporte</h2>
-                    <button onclick="cerrarModal('modal-legales', 'modal-ajustes')" aria-label="Volver a ajustes"
-                        class="modal-close-btn">
-                        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-                    </button>
-                </div>
-                <div class="checkout-box">
-                    <p style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 5px;">1.
-                        Zonas
-                        de
-                        Delivery</p>
-                    <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom:15px; line-height: 1.5;">
-                        Llegamos a
-                        gran parte de la ciudad. Ciertas zonas periféricas pueden tener recargo o no estar cubiertas por
-                        seguridad.</p>
-                    <p style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 5px;">2.
-                        Edad
-                        Mínima</p>
-                    <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom:15px; line-height: 1.5;">
-                        Prohibida
-                        la venta de licores a menores de 18 años. El repartidor podrá exigir documento de identidad en
-                        la
-                        entrega.</p>
-                    <p style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 5px;">3.
-                        Políticas
-                        de Garantía</p>
-                    <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 15px; line-height: 1.5;">
-                        Revise su pedido al
-                        momento de
-                        recibirlo. No aceptamos devoluciones de botellas abiertas o con sellos fiscales rotos.</p>
-                    <p style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 5px;">4.
-                        Privacidad de tus datos</p>
-                    <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.5;">
-                        Gran Catador no recopila ni almacena tus datos en servidores externos. Tu nombre y dirección se
-                        guardan únicamente en tu dispositivo (localStorage del navegador) para facilitar futuros
-                        pedidos.
-                        Para eliminarlos, ve a Mi Perfil y borra la información, o limpia los datos del sitio desde la
-                        configuración de tu navegador. Dudas: <a href="https://wa.me/584245496366" target="_blank"
-                            style="color: var(--color-primary); text-decoration: underline;">wa.me/584245496366</a>
-                    </p>
-                </div>
-                <button class="btn-enviar" onclick="abrirSoporteWhatsApp()"
-                    style="background:#25D366; box-shadow:0 4px 15px rgba(37,211,102,0.3); margin-top:20px;"><i
-                        class="fa-brands fa-whatsapp" style="font-size: 18px;"></i> Chatear con Soporte</button>
+            <div class="checkout-box" style="display:flex; justify-content:space-between; align-items:center;">
+                <label for="toggleDarkMode" style="font-weight:600; font-size: 14px; cursor: pointer;">🌙 Modo
+                    Oscuro</label>
+                <input type="checkbox" id="toggleDarkMode" onchange="toggleDark()"
+                    style="width:20px; height:20px; accent-color: var(--color-primary);"
+                    aria-label="Activar modo oscuro">
             </div>
+            <div class="checkout-box" style="margin-top:15px; cursor:pointer;" onclick="abrirLegales()" role="button"
+                tabindex="0" aria-label="Ver políticas y soporte">
+                <span style="font-weight:600; font-size: 14px; display:flex; align-items:center;"><i
+                        class="fa-solid fa-scale-balanced"
+                        style="margin-right:10px; color: var(--color-primary); font-size: 18px;" aria-hidden="true"></i>
+                    Políticas y Soporte</span>
+            </div>
+            <div class="checkout-box" style="margin-top:15px; cursor:pointer;" onclick="limpiarCacheAdmin()"
+                role="button" tabindex="0" aria-label="Actualizar precios e inventario">
+                <span style="font-weight:600; font-size: 14px; display:flex; align-items:center;"><i
+                        class="fa-solid fa-arrows-rotate"
+                        style="margin-right:10px; color: var(--color-success); font-size: 18px;" aria-hidden="true"></i>
+                    Actualizar Precios e Inventario</span>
+            </div>
+            <p
+                style="text-align: center; margin-top: 30px; font-size: 11px; color: var(--color-text-muted); line-height: 1.5;">
+                Desarrollado para Gran Catador C.A.<br>Contacto Soporte Técnico: 0422-0012375</p>
         </div>
+    </div>
 
-        <!-- Botón Flotante: Volver Arriba -->
-        <button id="btn-scroll-top" class="btn-scroll-top" onclick="scrollToTop()" aria-label="Volver arriba">
-            <i class="fa-solid fa-chevron-up"></i>
-        </button>
+    <div id="modal-legales" class="modal-fullscreen" style="z-index: 2500;">
+        <div class="modal-content-wrapper">
+            <div class="cart-header">
+                <h2>Legal y Soporte</h2>
+                <button onclick="cerrarModal('modal-legales', 'modal-ajustes')" aria-label="Volver a ajustes"
+                    class="modal-close-btn">
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="checkout-box">
+                <p style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 5px;">1.
+                    Zonas
+                    de
+                    Delivery</p>
+                <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom:15px; line-height: 1.5;">
+                    Llegamos a
+                    gran parte de la ciudad. Ciertas zonas periféricas pueden tener recargo o no estar cubiertas por
+                    seguridad.</p>
+                <p style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 5px;">2.
+                    Edad
+                    Mínima</p>
+                <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom:15px; line-height: 1.5;">
+                    Prohibida
+                    la venta de licores a menores de 18 años. El repartidor podrá exigir documento de identidad en
+                    la
+                    entrega.</p>
+                <p style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 5px;">3.
+                    Políticas
+                    de Garantía</p>
+                <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 15px; line-height: 1.5;">
+                    Revise su pedido al
+                    momento de
+                    recibirlo. No aceptamos devoluciones de botellas abiertas o con sellos fiscales rotos.</p>
+                <p style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 5px;">4.
+                    Privacidad de tus datos</p>
+                <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.5;">
+                    Gran Catador no recopila ni almacena tus datos en servidores externos. Tu nombre y dirección se
+                    guardan únicamente en tu dispositivo (localStorage del navegador) para facilitar futuros
+                    pedidos.
+                    Para eliminarlos, ve a Mi Perfil y borra la información, o limpia los datos del sitio desde la
+                    configuración de tu navegador. Dudas: <a href="https://wa.me/584245496366" target="_blank"
+                        style="color: var(--color-primary); text-decoration: underline;">wa.me/584245496366</a>
+                </p>
+            </div>
+            <button class="btn-enviar" onclick="abrirSoporteWhatsApp()"
+                style="background:#25D366; box-shadow:0 4px 15px rgba(37,211,102,0.3); margin-top:20px;"><i
+                    class="fa-brands fa-whatsapp" style="font-size: 18px;"></i> Chatear con Soporte</button>
+        </div>
+    </div>
 
-        <script src="js/utils.js?v=2.1"></script>
-        <script src="js/state.js?v=2.1"></script>
-        <script src="js/cart.js?v=2.1"></script>
-        <script src="js/ui.js?v=2.1"></script>
-        <script src="js/app.js?v=2.1"></script>
+    <!-- Botón Flotante: Volver Arriba -->
+    <button id="btn-scroll-top" class="btn-scroll-top" onclick="scrollToTop()" aria-label="Volver arriba">
+        <i class="fa-solid fa-chevron-up"></i>
+    </button>
+
+    <script src="js/utils.js?v=2.1"></script>
+    <script src="js/state.js?v=2.1"></script>
+    <script src="js/cart.js?v=2.1"></script>
+    <script src="js/ui.js?v=2.1"></script>
+    <script src="js/app.js?v=2.1"></script>
 </body>
 
 </html>
